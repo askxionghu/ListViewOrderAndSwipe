@@ -1,0 +1,17 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context=".MainActivity">
+
+    <com.example.android.listviewdragginganimation.PersonListViewOrder
+        android:id="@+id/lvPersons"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/grey_300"
+        android:cacheColorHint="#00000000"
+        android:divider="#c0c0c0"
+        android:dividerHeight="1dp"
+        android:scrollingCache="true" />
+
+</RelativeLayout>
