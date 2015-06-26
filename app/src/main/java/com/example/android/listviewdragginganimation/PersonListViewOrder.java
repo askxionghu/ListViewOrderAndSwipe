@@ -121,134 +121,11 @@ public class PersonListViewOrder extends ListView
 
   public void init(Context context)
   {
-    // setOnItemLongClickListener(mOnItemLongClickListener);
-
-/*    this.setOnTouchListener(new OnTouchListener()
-    {
-      @Override
-      public boolean onTouch(View view, MotionEvent event)
-      {
-        try
-        {
-          switch (event.getAction() & MotionEvent.ACTION_MASK)
-          {
-            case MotionEvent.ACTION_DOWN:
-              mDownX = (int) event.getX();
-              mDownY = (int) event.getY();
-              mActivePointerId = event.getPointerId(0);
-
-              View v = findViewAtPosition(view, (int) event.getRawX(), (int) event.getRawY());
-
-              if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
-              {
-                mTotalOffset = 0;
-
-                int position = pointToPosition(mDownX, mDownY);
-                int itemNum = position - getFirstVisiblePosition();
-
-                View selectedView = getChildAt(itemNum);
-                mMobileItemId = getAdapter().getItemId(position);
-                mHoverCell = getAndAddHoverView(selectedView);
-                selectedView.setVisibility(INVISIBLE);
-
-                mCellIsMobile = true;
-
-                updateNeighborViewsForID(mMobileItemId);
-              }
-
-              break;
-            case MotionEvent.ACTION_MOVE:
-              if (mActivePointerId == INVALID_POINTER_ID)
-              {
-                break;
-              }
-
-              int pointerIndex = event.findPointerIndex(mActivePointerId);
-
-              mLastEventY = (int) event.getY(pointerIndex);
-              int deltaY = mLastEventY - mDownY;
-
-              if (mCellIsMobile)
-              {
-                mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left,
-                    mHoverCellOriginalBounds.top + deltaY + mTotalOffset);
-                mHoverCell.setBounds(mHoverCellCurrentBounds);
-                invalidate();
-
-                handleCellSwitch();
-
-                mIsMobileScrolling = false;
-                handleMobileCellScroll();
-
-                return false;
-              }
-              break;
-            case MotionEvent.ACTION_UP:
-              touchEventsEnded();
-              break;
-            case MotionEvent.ACTION_CANCEL:
-              touchEventsCancelled();
-              break;
-            case MotionEvent.ACTION_POINTER_UP:
-        *//*
-         If a multitouch event took place and the original touch dictating
-         * the movement of the hover cell has ended, then the dragging event
-         * ends and the hover cell is animated to its corresponding position
-         * in the listview.
-         * *//*
-              pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >>
-                  MotionEvent.ACTION_POINTER_INDEX_SHIFT;
-              final int pointerId = event.getPointerId(pointerIndex);
-              if (pointerId == mActivePointerId)
-              {
-                touchEventsEnded();
-              }
-              break;
-            default:
-              break;
-          }
-        }
-        catch (Exception ex)
-        {
-          Log.e(TAG, "onTouch: " + ex.getMessage());
-        }
-
-        return false;
-      }
-    });*/
-
     setOnScrollListener(mScrollListener);
     DisplayMetrics metrics = context.getResources().getDisplayMetrics();
     mSmoothScrollAmountAtEdge = (int) (SMOOTH_SCROLL_AMOUNT_AT_EDGE / metrics.density);
   }
 
-
-/*  *//*
-     * Listens for long clicks on any items in the listview. When a cell has
-     * been selected, the hover cell is created and set up.
-  *//*
-  private OnItemLongClickListener mOnItemLongClickListener =
-      new OnItemLongClickListener()
-      {
-        public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int pos, long id)
-        {
-          mTotalOffset = 0;
-
-          int position = pointToPosition(mDownX, mDownY);
-          int itemNum = position - getFirstVisiblePosition();
-
-          View selectedView = getChildAt(itemNum);
-          mMobileItemId = getAdapter().getItemId(position);
-          mHoverCell = getAndAddHoverView(selectedView);
-          selectedView.setVisibility(INVISIBLE);
-
-          mCellIsMobile = true;
-
-          updateNeighborViewsForID(mMobileItemId);
-
-          return true;
-        }
-      };*/
 
   /**
    * Creates the hover cell with the appropriate bitmap and of appropriate
@@ -374,6 +251,13 @@ public class PersonListViewOrder extends ListView
   }
 
 
+  /**
+   * Returns the most inner view that contains the xy coordinate.
+   * @param v This method gets called recursively. The initial call should be the root view.
+   * @param x The X location to be tested.
+   * @param y The Y location to be tested.
+   * @return Returns the most inner view that contains the XY coordinate or null if no view could be found.
+   */
   private View findViewAtPosition(View v, int x, int y)
   {
     View vXY = null;
@@ -409,6 +293,11 @@ public class PersonListViewOrder extends ListView
   @Override
   public boolean onTouchEvent(MotionEvent event)
   {
+    // NOTE: Removing this try...catch will cause a Null exception to occur at:
+    // if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
+    // This happens when the user taps on a list item. Apparently a bug  inside
+    // of Android is causing this. Checking v != null doesn't help.
+    // DO NOT REMOVE THE try...catch
     try
     {
       switch (event.getAction() & MotionEvent.ACTION_MASK)
@@ -418,8 +307,11 @@ public class PersonListViewOrder extends ListView
           mDownY = (int) event.getY();
           mActivePointerId = event.getPointerId(0);
 
+          // Find the view that the user pressed their finger down on.
           View v = findViewAtPosition(getRootView(), (int) event.getRawX(), (int) event.getRawY());
 
+          // If the view contains a tag set to "DragIcon", it means that the user wants to
+          // reorder the list item.
           if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
           {
             mTotalOffset = 0;
