@@ -10,6 +10,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -21,15 +23,17 @@ public class PersonAdapter extends ArrayAdapter<Person>
   private List<Person> items;
   private Context context;
   private PersonListViewOrder listview;
+  private JBHorizontalSwipe jbHorizontalSwipe;
 
   HashMap<String, Integer> idMap = new HashMap<>();
 
-  public PersonAdapter(Context context, int textViewResourceId, List<Person> items)
+  public PersonAdapter(Context context, int textViewResourceId, List<Person> items, JBHorizontalSwipe jbHorizontalSwipe)
   {
     super(context, textViewResourceId, items);
 
     this.items = items;
     this.context = context;
+    this.jbHorizontalSwipe = jbHorizontalSwipe;
 
     for (int i = 0; i < items.size(); ++i)
     {
@@ -54,6 +58,9 @@ public class PersonAdapter extends ArrayAdapter<Person>
         LayoutInflater vi = (LayoutInflater) this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         v = vi.inflate(R.layout.person_item, null);
       }
+
+      CustomListItem customListItem = (CustomListItem)v;
+      customListItem.setJBHeaderRef(this.jbHorizontalSwipe);
 
       Person person = this.items.get(position);
       v.setTag(person);

@@ -253,6 +253,7 @@ public class PersonListViewOrder extends ListView
 
   /**
    * Returns the most inner view that contains the xy coordinate.
+   *
    * @param v This method gets called recursively. The initial call should be the root view.
    * @param x The X location to be tested.
    * @param y The Y location to be tested.
@@ -290,8 +291,10 @@ public class PersonListViewOrder extends ListView
     return vXY;
   }
 
+  //  @Override
+//  public boolean onTouchEvent(MotionEvent event)
   @Override
-  public boolean onTouchEvent(MotionEvent event)
+  public boolean dispatchTouchEvent(MotionEvent event)
   {
     // NOTE: Removing this try...catch will cause a Null exception to occur at:
     // if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
@@ -329,6 +332,8 @@ public class PersonListViewOrder extends ListView
             updateNeighborViewsForID(mMobileItemId);
           }
 
+          //super.dispatchTouchEvent(event);
+          //return true;
           break;
         case MotionEvent.ACTION_MOVE:
           if (mActivePointerId == INVALID_POINTER_ID)
@@ -381,11 +386,11 @@ public class PersonListViewOrder extends ListView
           break;
       }
     }
-    catch(Exception ex)
+    catch (Exception ex)
     {
     }
 
-    return super.onTouchEvent(event);
+    return super.dispatchTouchEvent(event);
   }
 
   /**

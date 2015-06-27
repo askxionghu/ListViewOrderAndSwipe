@@ -16,6 +16,8 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +31,7 @@ public class MainActivity extends ActionBarActivity
   private ArrayList<Person> persons = new ArrayList<>();
   private PersonAdapter adapterPerson;
   private PersonListViewOrder lvPersons;
+  private JBHorizontalSwipe jbHorizontalSwipe;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -37,6 +40,8 @@ public class MainActivity extends ActionBarActivity
     {
       super.onCreate(savedInstanceState);
       setContentView(R.layout.activity_main);
+
+      this.jbHorizontalSwipe = new JBHorizontalSwipe(ijbHorizontalSwipe);
 
       this.persons.add(new Person(getNewId(), "Ben", BitmapFactory.decodeResource(getResources(), R.drawable.ic_ben)));
       this.persons.add(new Person(getNewId(), "Brad", BitmapFactory.decodeResource(getResources(), R.drawable.ic_brad)));
@@ -59,7 +64,7 @@ public class MainActivity extends ActionBarActivity
 
       this.lvPersons = (PersonListViewOrder) findViewById(R.id.lvPersons);
       this.lvPersons.setPersonList(this.persons);
-      this.adapterPerson = new PersonAdapter(this, R.layout.person_item, persons);
+      this.adapterPerson = new PersonAdapter(this, R.layout.person_item, persons, this.jbHorizontalSwipe);
       this.adapterPerson.setListView(this.lvPersons);
       this.lvPersons.setAdapter(this.adapterPerson);
 
@@ -70,6 +75,35 @@ public class MainActivity extends ActionBarActivity
     }
   }
 
+  private JBHorizontalSwipe.IJBHorizontalSwipe ijbHorizontalSwipe = new JBHorizontalSwipe.IJBHorizontalSwipe()
+  {
+    @Override
+    public void onReposition(float x, boolean scrollingRight, float scrollDelta)
+    {
+
+    }
+
+    @Override
+    public int onHeaderBeforeAnimation(boolean scrollingRight, float scrollDelta)
+    {
+      return 0;
+    }
+
+    @Override
+    public void onHeaderAfterAnimation(boolean animatedRight, float scrollDelta)
+    {
+
+    }
+  };
+
+
+  public boolean dispatchTouchEvent(MotionEvent ev)
+  {
+    if (this.jbHorizontalSwipe != null)
+      this.jbHorizontalSwipe.onRootDispatchTouchEventListener(ev);
+
+    return super.dispatchTouchEvent(ev);
+  }
 
 
   private long getNewId()
