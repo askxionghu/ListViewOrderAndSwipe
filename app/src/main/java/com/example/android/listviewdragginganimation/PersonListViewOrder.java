@@ -40,6 +40,8 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 
+import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
+
 import java.util.ArrayList;
 
 /**
@@ -63,7 +65,7 @@ import java.util.ArrayList;
  * When the hover cell is either above or below the bounds of the listview, this
  * listview also scrolls on its own so as to reveal additional content.
  */
-public class PersonListViewOrder extends ListView
+public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.IJBHorizontalSwipeTouch
 {
 
   private final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 15;
@@ -100,6 +102,8 @@ public class PersonListViewOrder extends ListView
 
   private boolean mIsWaitingForScrollFinish = false;
   private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
+
+  private boolean disableScrolling;
 
   public PersonListViewOrder(Context context)
   {
@@ -293,8 +297,10 @@ public class PersonListViewOrder extends ListView
 
   //  @Override
 //  public boolean onTouchEvent(MotionEvent event)
+//  @Override
+//  public boolean dispatchTouchEvent(MotionEvent event)
   @Override
-  public boolean dispatchTouchEvent(MotionEvent event)
+  public boolean onTouchEvent(MotionEvent event)
   {
     // NOTE: Removing this try...catch will cause a Null exception to occur at:
     // if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
@@ -303,6 +309,9 @@ public class PersonListViewOrder extends ListView
     // DO NOT REMOVE THE try...catch
     try
     {
+      if (this.disableScrolling)
+        return true;
+
       switch (event.getAction() & MotionEvent.ACTION_MASK)
       {
         case MotionEvent.ACTION_DOWN:
@@ -390,7 +399,14 @@ public class PersonListViewOrder extends ListView
     {
     }
 
-    return super.dispatchTouchEvent(event);
+    return super.onTouchEvent(event);
+    //return super.dispatchTouchEvent(event);
+  }
+
+  @Override
+  public void setDisableScrolling(boolean disable)
+  {
+    this.disableScrolling = disable;
   }
 
   /**

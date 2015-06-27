@@ -24,14 +24,25 @@ public class CustomListItem extends RelativeLayout
     super(context, attrs, defStyleAttr);
   }
 
-  @Override
+/*  @Override
   public boolean dispatchTouchEvent(MotionEvent ev)
   {
     if (this.jbHorizontalSwipe != null)
       this.jbHorizontalSwipe.onScrollerDispatchTouchEventListener(this, ev);
 
     return super.dispatchTouchEvent(ev);
+  }*/
+
+
+  @Override
+  public boolean onTouchEvent(MotionEvent ev)
+  {
+    if (this.jbHorizontalSwipe != null)
+      this.jbHorizontalSwipe.onScrollerDispatchTouchEventListener(this, ev);
+
+    return super.onTouchEvent(ev);
   }
+
 
   public void setJBHeaderRef(JBHorizontalSwipe jbHorizontalSwipe)
   {
