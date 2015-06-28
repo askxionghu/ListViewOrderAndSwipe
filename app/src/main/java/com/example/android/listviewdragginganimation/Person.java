@@ -10,6 +10,7 @@ public class Person
   public long id;
   public String name;
   public Bitmap bitmap;
+  public boolean deleted;
 
   public Person(long id, String name, Bitmap bitmap)
   {

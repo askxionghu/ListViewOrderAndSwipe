@@ -27,10 +27,12 @@ public class JBHorizontalSwipe
   private ObjectAnimator animatorView;
   private boolean animating;
   private boolean cancelAnimation;
+  private float initialLeft;
 
-  public final static int ANIMATE_USING_DEFAULT = 0;
-  public final static int ANIMATE_LEFT = 1;
-  public final static int ANIMATE_RIGHT = 2;
+  public final static int ANIMATE_POSITION_LEFT_VISIBLE = 0;
+  public final static int ANIMATE_POSITION_LEFT_INVISIBLE = 1;
+  public final static int ANIMATE_POSITION_RIGHT_VISIBLE = 2;
+  public final static int ANIMATE_POSITION_RIGHT_INVISIBLE = 3;
 
   public JBHorizontalSwipe(IJBHorizontalSwipe ijbHorizontalSwipe)
   {
@@ -51,7 +53,11 @@ public class JBHorizontalSwipe
     try
     {
       if (event.getAction() == MotionEvent.ACTION_DOWN)
+      {
         this.vScroller = v;
+        View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
+        this.initialLeft = vTop.getX();
+      }
     }
     catch (Exception ex)
     {
@@ -68,10 +74,11 @@ public class JBHorizontalSwipe
         // Reposition the top view if necessary.
         this.fingerUp = true;
 
-        View vTopView = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
+        View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
-        if ((vTopView.getX() > 0) || (scrollDeltaX != 0))
-          processViewPosition(vTopView);
+        //if ((vTopView.getX() > 0) || (scrollDeltaX != 0))
+        if (vTop.getX() != 0)
+          processViewPosition(vTop);
 
         IJBHorizontalSwipeTouch ijbHorizontalSwipeTouch = (IJBHorizontalSwipeTouch) this.vScroller.getParent();
         ijbHorizontalSwipeTouch.setDisableScrolling(false);
@@ -97,9 +104,9 @@ public class JBHorizontalSwipe
 //        if (this.scrollDeltaX < 10)
 //          return;
 
-        View vTopView = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
+        View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
-        if (((this.scrollDeltaX > 10) && (this.scrollDeltaY < 10)) || (vTopView.getX() != 0))
+        if (((this.scrollDeltaX > 10) && (this.scrollDeltaY < 10)) || (vTop.getX() != 0))
         {
           IJBHorizontalSwipeTouch ijbHorizontalSwipeTouch = (IJBHorizontalSwipeTouch) this.vScroller.getParent();
           ijbHorizontalSwipeTouch.setDisableScrolling(true);
@@ -123,7 +130,7 @@ public class JBHorizontalSwipe
 
       View rlTopView = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
-      // Hide the top view if the user was flinging it to the right.
+/*      // Hide the top view if the user was flinging it to the right.
       if (this.scrollingRight && (this.scrollDeltaX > 50) && fingerUp)
       {
         animateViewRight(rlTopView);
@@ -135,7 +142,7 @@ public class JBHorizontalSwipe
       {
         animateViewLeft(rlTopView);
         return;
-      }
+      }*/
 
       if (animating || fingerUp)
         return;
@@ -144,8 +151,8 @@ public class JBHorizontalSwipe
       {
         float x = rlTopView.getX() + this.scrollDeltaX;
 
-        if (x > this.vScroller.getWidth())
-          x = this.vScroller.getWidth();
+//        if (x > this.vScroller.getWidth())
+//          x = this.vScroller.getWidth();
 
         rlTopView.setX(x);
       }
@@ -153,8 +160,8 @@ public class JBHorizontalSwipe
       {
         float x = rlTopView.getX() - this.scrollDeltaX;
 
-        if (x < 0)
-          x = 0;
+//        if (x < 0)
+//          x = 0;
 
         rlTopView.setX(x);
       }
@@ -169,7 +176,7 @@ public class JBHorizontalSwipe
   /**
    * This is where the decision is made to either display or hide the view.
    */
-  private void processViewPosition(View vTopView)
+  private void processViewPosition(View vTop)
   {
     try
     {
@@ -178,44 +185,69 @@ public class JBHorizontalSwipe
         if (this.vScroller == null)
           return;
 
-        // Animate the header up or down if the client has requested it.
-        if (this.ijbHorizontalSwipe != null)
+        if (this.scrollingRight && (this.scrollDeltaX > 50) && (vTop.getX() > 0))
         {
-          int animateDirection = this.ijbHorizontalSwipe.onHeaderBeforeAnimation(this.scrollingRight, this.scrollDeltaX);
-
-          if (animateDirection == ANIMATE_LEFT)
-          {
-            animateViewLeft(vTopView);
-            return;
-          }
-          else if (animateDirection == ANIMATE_RIGHT)
-          {
-            animateViewRight(vTopView);
-            return;
-          }
-        }
-
-        if (this.scrollingRight && (this.scrollDeltaX > 50))
-        {
-          animateViewRight(vTopView);
+          animateView(vTop, ANIMATE_POSITION_RIGHT_INVISIBLE);
           return;
         }
 
-        if (!this.scrollingRight && (this.scrollDeltaX > 50))
+        if (this.scrollingRight && (this.scrollDeltaX > 50) && (vTop.getX() < 0))
         {
-          animateViewLeft(vTopView);
+          animateView(vTop, ANIMATE_POSITION_RIGHT_VISIBLE);
           return;
         }
 
-        // The view has moved less than half of its width
-        if (vTopView.getX() < this.vScroller.getWidth() / 2)
+        if (!this.scrollingRight && (this.scrollDeltaX > 50) && (vTop.getX() > 0))
         {
-          animateViewLeft(vTopView);
+          animateView(vTop, ANIMATE_POSITION_LEFT_VISIBLE);
           return;
         }
-        else
+
+        if (!this.scrollingRight && (this.scrollDeltaX > 50) && (vTop.getX() < 0))
         {
-          animateViewRight(vTopView);
+          animateView(vTop, ANIMATE_POSITION_LEFT_INVISIBLE);
+          return;
+        }
+
+        // View was moved to the right of its origin.
+        if ((this.initialLeft == 0) && (vTop.getX() > 0) && (vTop.getX() < this.vScroller.getWidth() / 3))
+        {
+          animateView(vTop, ANIMATE_POSITION_LEFT_VISIBLE);
+          return;
+        }
+        else if ((this.initialLeft == 0) && (vTop.getX() >= this.vScroller.getWidth() / 3))
+        {
+          animateView(vTop, ANIMATE_POSITION_RIGHT_INVISIBLE);
+          return;
+        }
+        else if ((this.initialLeft == 0) && (vTop.getX() > -this.vScroller.getWidth() / 3))
+        {
+          animateView(vTop, ANIMATE_POSITION_RIGHT_VISIBLE);
+          return;
+        }
+        else if (this.initialLeft == 0)
+        {
+          animateView(vTop, ANIMATE_POSITION_LEFT_INVISIBLE);
+          return;
+        }
+        else if ((this.initialLeft > 0) && (vTop.getX() >= this.vScroller.getWidth() * 2/3))
+        {
+          animateView(vTop, ANIMATE_POSITION_RIGHT_INVISIBLE);
+          return;
+        }
+        else if (this.initialLeft > 0)
+        {
+          animateView(vTop, ANIMATE_POSITION_LEFT_VISIBLE);
+          return;
+        }
+        else if ((this.initialLeft < 0) && (vTop.getX() > -this.vScroller.getWidth() * 2/3))
+        {
+          animateView(vTop, ANIMATE_POSITION_RIGHT_VISIBLE);
+          return;
+        }
+        else //if (vTop.getX() <= -this.vScroller.getWidth() / 3)
+        {
+          animateView(vTop, ANIMATE_POSITION_LEFT_INVISIBLE);
           return;
         }
       }
@@ -233,65 +265,47 @@ public class JBHorizontalSwipe
 
 
   /**
-   * Animates the view to the left to be hidden.
+   * Animates the view.
    */
-  public void animateViewLeft(View vTopVIew)
+  public void animateView(View vTop, int position)
   {
     try
     {
       if (this.animatorView != null)
         this.animatorView.cancel();
 
-      if (vTopVIew.getX() == 0)
-        return;
+      float left;
+
+      switch (position)
+      {
+        case ANIMATE_POSITION_LEFT_INVISIBLE:
+          left = -vTop.getWidth();
+          break;
+
+        case ANIMATE_POSITION_RIGHT_INVISIBLE:
+          left = vTop.getWidth();
+          break;
+
+        default:
+          left = 0;
+          break;
+      }
 
       animating = true;
-      PropertyValuesHolder pvhXBar = PropertyValuesHolder.ofFloat("x", vTopVIew.getX(), 0);
-      this.animatorView = ObjectAnimator.ofPropertyValuesHolder(vTopVIew, pvhXBar);
+      PropertyValuesHolder pvhXBar = PropertyValuesHolder.ofFloat("x", vTop.getX(), left);
+      this.animatorView = ObjectAnimator.ofPropertyValuesHolder(vTop, pvhXBar);
       this.animatorView.setInterpolator(new LinearInterpolator());
       this.animatorView.setDuration(200);
       this.animatorView.addListener(animListener);
       this.cancelAnimation = false;
       this.animatorView.start();
 
-      if (this.ijbHorizontalSwipe != null)
-        this.ijbHorizontalSwipe.onHeaderAfterAnimation(false, this.scrollDeltaX);
+      if ((this.ijbHorizontalSwipe != null) && (left != this.initialLeft))
+        this.ijbHorizontalSwipe.onTopViewVisibilityChange((position == ANIMATE_POSITION_LEFT_VISIBLE) || (position == ANIMATE_POSITION_RIGHT_VISIBLE));
     }
     catch (Exception ex)
     {
-      Log.e(LOG_TAG, "animateViewLeft: " + ex.toString());
-    }
-  }
-
-
-  /**
-   * Animates the view to the right to be visible.
-   */
-  public void animateViewRight(View vTopVIew)
-  {
-    try
-    {
-      if (this.animatorView != null)
-        this.animatorView.cancel();
-
-      if (vTopVIew.getX() == this.vScroller.getWidth() - 1)
-        return;
-
-      animating = true;
-      PropertyValuesHolder pvhXBar = PropertyValuesHolder.ofFloat("x", vTopVIew.getX(), vTopVIew.getWidth());
-      this.animatorView = ObjectAnimator.ofPropertyValuesHolder(vTopVIew, pvhXBar);
-      this.animatorView.setInterpolator(new LinearInterpolator());
-      this.animatorView.setDuration(200);
-      this.animatorView.addListener(animListener);
-      this.cancelAnimation = false;
-      this.animatorView.start();
-
-      if (this.ijbHorizontalSwipe != null)
-        this.ijbHorizontalSwipe.onHeaderAfterAnimation(true, this.scrollDeltaX);
-    }
-    catch (Exception ex)
-    {
-      Log.e(LOG_TAG, "animateViewRight: " + ex.toString());
+      Log.e(LOG_TAG, "animateView: " + ex.toString());
     }
   }
 
@@ -332,9 +346,7 @@ public class JBHorizontalSwipe
   {
     void onReposition(float x, boolean scrollingRight, float scrollDelta);
 
-    int onHeaderBeforeAnimation(boolean scrollingRight, float scrollDelta);
-
-    void onHeaderAfterAnimation(boolean animatedRight, float scrollDelta);
+    void onTopViewVisibilityChange(boolean visible);
   }
 
   public interface IJBHorizontalSwipeTouch

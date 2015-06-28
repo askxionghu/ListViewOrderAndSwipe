@@ -106,16 +106,10 @@ public class MainActivity extends ActionBarActivity
     }
 
     @Override
-    public int onHeaderBeforeAnimation(boolean scrollingRight, float scrollDelta)
+    public void onTopViewVisibilityChange(boolean visible)
     {
-      return 0;
     }
 
-    @Override
-    public void onHeaderAfterAnimation(boolean animatedRight, float scrollDelta)
-    {
-
-    }
   };
 
 
