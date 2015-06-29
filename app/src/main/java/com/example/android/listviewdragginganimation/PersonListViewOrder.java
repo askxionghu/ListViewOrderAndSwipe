@@ -28,6 +28,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -105,6 +106,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
   private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
 
   private boolean disableScrolling;
+  private Context context;
 
   public PersonListViewOrder(Context context)
   {
@@ -126,6 +128,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
 
   public void init(Context context)
   {
+    this.context = context;
     setOnScrollListener(mScrollListener);
     DisplayMetrics metrics = context.getResources().getDisplayMetrics();
     mSmoothScrollAmountAtEdge = (int) (SMOOTH_SCROLL_AMOUNT_AT_EDGE / metrics.density);
@@ -296,12 +299,9 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
     return vXY;
   }
 
-  //  @Override
-//  public boolean onTouchEvent(MotionEvent event)
-//  @Override
-//  public boolean dispatchTouchEvent(MotionEvent event)
+
   @Override
-  public boolean onTouchEvent(MotionEvent event)
+  public boolean onTouchEvent(final MotionEvent event)
   {
     // NOTE: Removing this try...catch will cause a Null exception to occur at:
     // if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
@@ -311,16 +311,6 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
     try
     {
       int action = event.getAction() & MotionEvent.ACTION_MASK;
-
-//      if ((action == MotionEvent.ACTION_UP) && this.disableScrolling)
-//      {
-//        this.disableScrolling = false;
-//
-//        ListAdapter listAdapter = this.getAdapter();
-//        JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (JBHorizontalSwipe.IJBHorizontalSwipeAdapter) listAdapter;
-//        ijbHorizontalSwipeAdapter.setDisable(false);
-//        return true;
-//      }
 
       if (this.disableScrolling && (action != MotionEvent.ACTION_UP))
         return true;
@@ -354,8 +344,6 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
             updateNeighborViewsForID(mMobileItemId);
           }
 
-          //super.dispatchTouchEvent(event);
-          //return true;
           break;
         case MotionEvent.ACTION_MOVE:
           if (mActivePointerId == INVALID_POINTER_ID)
@@ -383,27 +371,28 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
           }
           break;
         case MotionEvent.ACTION_UP:
+
           touchEventsEnded();
 
           if (this.disableScrolling)
           {
-            PersonAdapter personAdapter = (PersonAdapter) this.getAdapter();
+            // Enable the adapter to process touch events for list items.
+            PersonAdapter personAdapter = (PersonAdapter) getAdapter();
             JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (JBHorizontalSwipe.IJBHorizontalSwipeAdapter) personAdapter;
             ijbHorizontalSwipeAdapter.setDisable(false);
 
-            invalidate();
-            ((BaseAdapter) getAdapter()).notifyDataSetChanged();
-
-//            int start = getFirstVisiblePosition();
-//
-//            for (int i = start, j = getLastVisiblePosition(); i <= j; i++)
-//            {
-//              View view = getChildAt(i - start);
-//              View vItem = getAdapter().getView(i, view, this);
-//            }
-
             this.disableScrolling = false;
-            return false;
+
+            // If a list item received the ACTION_DOWN but then the user started a horizontal swipe,
+            // the background color of the list item (its top view) will be in the selected state. We need to reset
+            // the background color to the unselected state.
+
+            View selectedView = ijbHorizontalSwipeAdapter.getSelectedView();
+
+            if (selectedView != null)
+              selectedView.setPressed(false);
+
+            return true;
           }
 
           this.disableScrolling = false;
@@ -436,12 +425,23 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
     }
 
     return super.onTouchEvent(event);
-    //return super.dispatchTouchEvent(event);
   }
+
 
   @Override
   public void setDisableScrolling(boolean disable)
   {
+    /*
+     * When a row is swiped horizontally, the top view will receive the ACTION_DOWN
+     * event, which causes the top view in the item to appear selected. Normally,
+     * when you release your finger, the ACTION_UP clears the background to
+     * make it look unselected. But when the ACTION_DOWN is received, JBHorizontalSwipe will
+     * needs to prevent any further onTouch events from being intercepted by this listview.
+     * requestDisallowInterceptTouchEvent does not work for some unkonwn reason, so as a
+     * workaround, setting a flag - disableScrolling - will cause all further MotionEvents
+     * in the onTouchEvent method from being processed. When an ACTION_UP occurs, this
+     * flag will get reset to false, allowing the future motion events to be processed.
+     */
     this.disableScrolling = disable;
   }
 

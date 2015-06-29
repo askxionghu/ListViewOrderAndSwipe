@@ -80,17 +80,8 @@ public class JBHorizontalSwipe
 
         View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
-        //if ((vTopView.getX() > 0) || (scrollDeltaX != 0))
         if (vTop.getX() != 0)
           processViewPosition(vTop);
-
-//        ListView listview = (ListView) vTop.getParent().getParent();
-//        ListAdapter listAdapter = listview.getAdapter();
-//        IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (IJBHorizontalSwipeAdapter) listAdapter;
-//        ijbHorizontalSwipeAdapter.setDisable(false);
-
-//        IJBHorizontalSwipeTouch ijbHorizontalSwipeTouch = (IJBHorizontalSwipeTouch) this.vScroller.getParent();
-//        ijbHorizontalSwipeTouch.setDisableScrolling(false);
 
         this.vScroller = null;
       }
@@ -109,9 +100,6 @@ public class JBHorizontalSwipe
         this.scrollDeltaY = Math.abs(event.getY() - this.motionEventPrevY);
         this.motionEventPrevX = event.getX();
         this.motionEventPrevY = event.getY();
-
-//        if (this.scrollDeltaX < 10)
-//          return;
 
         View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
@@ -371,5 +359,6 @@ public class JBHorizontalSwipe
   public interface IJBHorizontalSwipeAdapter
   {
     void setDisable(boolean disable);
+    View getSelectedView();
   }
 }

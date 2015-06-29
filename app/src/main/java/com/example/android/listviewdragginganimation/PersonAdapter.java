@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
@@ -19,6 +20,7 @@ import java.util.List;
 public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalSwipe.IJBHorizontalSwipeAdapter
 {
   private final String TAG = "PersonAdapter";
+  private final String TAG_TOP_VIEW = "TopView";
   final int INVALID_ID = -1;
 
   private List<Person> items;
@@ -26,6 +28,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
   private PersonListViewOrder listview;
   private JBHorizontalSwipe jbHorizontalSwipe;
   private boolean disableAdapter;
+  private View selectedView;
 
   HashMap<String, Integer> idMap = new HashMap<>();
 
@@ -54,6 +57,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     try
     {
       View v = convertView;
+      Person person = this.items.get(position);
 
       if (v == null)
       {
@@ -64,7 +68,6 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       CustomListItem customListItem = (CustomListItem) v;
       customListItem.setJBHeaderRef(this.jbHorizontalSwipe);
 
-      Person person = this.items.get(position);
       v.setTag(person);
 
       ImageView ivIcon = (ImageView) v.findViewById(R.id.ivIcon);
@@ -74,7 +77,8 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       TextView tvName = (TextView) v.findViewById(R.id.tvName);
       tvName.setText(person.name);
 
-      //v.setOnClickListener(onItemClick);
+      View vTop = v.findViewWithTag(TAG_TOP_VIEW);
+      vTop.setOnTouchListener(onTouchListenerTopView);
 
       return v;
     }
@@ -84,6 +88,29 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       return convertView;
     }
   }
+
+
+  private View.OnTouchListener onTouchListenerTopView = new View.OnTouchListener()
+  {
+    @Override
+    public boolean onTouch(View v, MotionEvent event)
+    {
+      try
+      {
+        int action = event.getAction() & MotionEvent.ACTION_MASK;
+
+        if (action == MotionEvent.ACTION_DOWN)
+          selectedView = v;
+
+        return false;
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG, "onCreate: " + ex.getMessage());
+      }
+      return false;
+    }
+  };
 
 
   @Override
@@ -102,15 +129,11 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     this.disableAdapter = disable;
   }
 
-  private View.OnClickListener onItemClick = new View.OnClickListener()
+  @Override
+  public View getSelectedView()
   {
-    @Override
-    public void onClick(View v)
-    {
-      int x = 0;
-      x++;
-    }
-  };
+    return this.selectedView;
+  }
 
 
   @Override
