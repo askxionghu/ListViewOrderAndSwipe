@@ -6,7 +6,11 @@ import android.animation.PropertyValuesHolder;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.view.animation.LinearInterpolator;
+import android.widget.AdapterView;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 
 /**
  * Created by Johann on 6/27/15.
@@ -80,8 +84,13 @@ public class JBHorizontalSwipe
         if (vTop.getX() != 0)
           processViewPosition(vTop);
 
-        IJBHorizontalSwipeTouch ijbHorizontalSwipeTouch = (IJBHorizontalSwipeTouch) this.vScroller.getParent();
-        ijbHorizontalSwipeTouch.setDisableScrolling(false);
+//        ListView listview = (ListView) vTop.getParent().getParent();
+//        ListAdapter listAdapter = listview.getAdapter();
+//        IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (IJBHorizontalSwipeAdapter) listAdapter;
+//        ijbHorizontalSwipeAdapter.setDisable(false);
+
+//        IJBHorizontalSwipeTouch ijbHorizontalSwipeTouch = (IJBHorizontalSwipeTouch) this.vScroller.getParent();
+//        ijbHorizontalSwipeTouch.setDisableScrolling(false);
 
         this.vScroller = null;
       }
@@ -110,6 +119,11 @@ public class JBHorizontalSwipe
         {
           IJBHorizontalSwipeTouch ijbHorizontalSwipeTouch = (IJBHorizontalSwipeTouch) this.vScroller.getParent();
           ijbHorizontalSwipeTouch.setDisableScrolling(true);
+
+          ListView listview = (ListView) vTop.getParent().getParent();
+          ListAdapter listAdapter = listview.getAdapter();
+          IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (IJBHorizontalSwipeAdapter) listAdapter;
+          ijbHorizontalSwipeAdapter.setDisable(true);
 
           repositionTopView();
         }
@@ -352,5 +366,10 @@ public class JBHorizontalSwipe
   public interface IJBHorizontalSwipeTouch
   {
     void setDisableScrolling(boolean disable);
+  }
+
+  public interface IJBHorizontalSwipeAdapter
+  {
+    void setDisable(boolean disable);
   }
 }

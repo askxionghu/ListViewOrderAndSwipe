@@ -38,6 +38,7 @@ import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
@@ -309,10 +310,22 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
     // DO NOT REMOVE THE try...catch
     try
     {
-      if (this.disableScrolling)
+      int action = event.getAction() & MotionEvent.ACTION_MASK;
+
+//      if ((action == MotionEvent.ACTION_UP) && this.disableScrolling)
+//      {
+//        this.disableScrolling = false;
+//
+//        ListAdapter listAdapter = this.getAdapter();
+//        JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (JBHorizontalSwipe.IJBHorizontalSwipeAdapter) listAdapter;
+//        ijbHorizontalSwipeAdapter.setDisable(false);
+//        return true;
+//      }
+
+      if (this.disableScrolling && (action != MotionEvent.ACTION_UP))
         return true;
 
-      switch (event.getAction() & MotionEvent.ACTION_MASK)
+      switch (action)
       {
         case MotionEvent.ACTION_DOWN:
           mDownX = (int) event.getX();
@@ -357,8 +370,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
 
           if (mCellIsMobile)
           {
-            mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left,
-                mHoverCellOriginalBounds.top + deltaY + mTotalOffset);
+            mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left, mHoverCellOriginalBounds.top + deltaY + mTotalOffset);
             mHoverCell.setBounds(mHoverCellCurrentBounds);
             invalidate();
 
@@ -372,6 +384,30 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
           break;
         case MotionEvent.ACTION_UP:
           touchEventsEnded();
+
+          if (this.disableScrolling)
+          {
+            PersonAdapter personAdapter = (PersonAdapter) this.getAdapter();
+            JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (JBHorizontalSwipe.IJBHorizontalSwipeAdapter) personAdapter;
+            ijbHorizontalSwipeAdapter.setDisable(false);
+
+            invalidate();
+            ((BaseAdapter) getAdapter()).notifyDataSetChanged();
+
+//            int start = getFirstVisiblePosition();
+//
+//            for (int i = start, j = getLastVisiblePosition(); i <= j; i++)
+//            {
+//              View view = getChildAt(i - start);
+//              View vItem = getAdapter().getView(i, view, this);
+//            }
+
+            this.disableScrolling = false;
+            return false;
+          }
+
+          this.disableScrolling = false;
+
           break;
         case MotionEvent.ACTION_CANCEL:
           touchEventsCancelled();
@@ -475,8 +511,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
 
           switchView.setTranslationY(delta);
 
-          ObjectAnimator animator = ObjectAnimator.ofFloat(switchView,
-              View.TRANSLATION_Y, 0);
+          ObjectAnimator animator = ObjectAnimator.ofFloat(switchView, View.TRANSLATION_Y, 0);
           animator.setDuration(MOVE_DURATION);
           animator.start();
 

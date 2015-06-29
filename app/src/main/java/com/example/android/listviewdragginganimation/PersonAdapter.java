@@ -1,6 +1,7 @@
 package com.example.android.listviewdragginganimation;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -15,7 +16,7 @@ import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 import java.util.HashMap;
 import java.util.List;
 
-public class PersonAdapter extends ArrayAdapter<Person>
+public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalSwipe.IJBHorizontalSwipeAdapter
 {
   private final String TAG = "PersonAdapter";
   final int INVALID_ID = -1;
@@ -24,6 +25,7 @@ public class PersonAdapter extends ArrayAdapter<Person>
   private Context context;
   private PersonListViewOrder listview;
   private JBHorizontalSwipe jbHorizontalSwipe;
+  private boolean disableAdapter;
 
   HashMap<String, Integer> idMap = new HashMap<>();
 
@@ -59,7 +61,7 @@ public class PersonAdapter extends ArrayAdapter<Person>
         v = vi.inflate(R.layout.person_item, null);
       }
 
-      CustomListItem customListItem = (CustomListItem)v;
+      CustomListItem customListItem = (CustomListItem) v;
       customListItem.setJBHeaderRef(this.jbHorizontalSwipe);
 
       Person person = this.items.get(position);
@@ -72,6 +74,8 @@ public class PersonAdapter extends ArrayAdapter<Person>
       TextView tvName = (TextView) v.findViewById(R.id.tvName);
       tvName.setText(person.name);
 
+      //v.setOnClickListener(onItemClick);
+
       return v;
     }
     catch (Exception ex)
@@ -80,6 +84,33 @@ public class PersonAdapter extends ArrayAdapter<Person>
       return convertView;
     }
   }
+
+
+  @Override
+  public boolean isEnabled(int position)
+  {
+    if (this.disableAdapter)
+      return false;
+    else
+      return true;
+  }
+
+
+  @Override
+  public void setDisable(boolean disable)
+  {
+    this.disableAdapter = disable;
+  }
+
+  private View.OnClickListener onItemClick = new View.OnClickListener()
+  {
+    @Override
+    public void onClick(View v)
+    {
+      int x = 0;
+      x++;
+    }
+  };
 
 
   @Override
