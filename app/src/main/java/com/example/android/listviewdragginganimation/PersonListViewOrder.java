@@ -267,7 +267,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    * @param y The Y location to be tested.
    * @return Returns the most inner view that contains the XY coordinate or null if no view could be found.
    */
-  private View findViewAtPosition(View v, int x, int y)
+  private View findViewAtPositionWithTag(View v, int x, int y, String tag)
   {
     View vXY = null;
 
@@ -285,9 +285,9 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
         if ((x >= loc[0] && (x <= (loc[0] + c.getWidth()))) && (y >= loc[1] && (y <= (loc[1] + c.getHeight()))))
         {
           vXY = c;
-          View viewAtPosition = findViewAtPosition(c, x, y);
+          View viewAtPosition = findViewAtPositionWithTag(c, x, y, tag);
 
-          if (viewAtPosition != null)
+          if ((viewAtPosition != null) && (viewAtPosition.getTag() != null) && viewAtPosition.getTag().equals(tag))
           {
             vXY = viewAtPosition;
             break;
@@ -323,7 +323,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
           mActivePointerId = event.getPointerId(0);
 
           // Find the view that the user pressed their finger down on.
-          View v = findViewAtPosition(getRootView(), (int) event.getRawX(), (int) event.getRawY());
+          View v = findViewAtPositionWithTag(getRootView(), (int) event.getRawX(), (int) event.getRawY(), TAG_DRAG_ICON);
 
           // If the view contains a tag set to "DragIcon", it means that the user wants to
           // reorder the list item.
@@ -379,7 +379,6 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
             // Enable the adapter to process touch events for list items.
             PersonAdapter personAdapter = (PersonAdapter) getAdapter();
             JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (JBHorizontalSwipe.IJBHorizontalSwipeAdapter) personAdapter;
-            ijbHorizontalSwipeAdapter.setDisable(false);
 
             this.disableScrolling = false;
 
@@ -422,6 +421,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
     }
     catch (Exception ex)
     {
+      Log.e(TAG, "onTouchEvent: " + ex.getMessage());
     }
 
     return super.onTouchEvent(event);

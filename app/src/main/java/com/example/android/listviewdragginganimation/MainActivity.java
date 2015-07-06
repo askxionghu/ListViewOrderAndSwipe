@@ -1,40 +1,49 @@
 package com.example.android.listviewdragginganimation;
 
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
 import android.content.Context;
 import android.graphics.BitmapFactory;
+import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Random;
 
 
 public class MainActivity extends ActionBarActivity
 {
   private final String TAG = "MainActivity";
+  private final String TAG_BOTTOM_VIEW = "BottomView";
 
   private ArrayList<Person> persons = new ArrayList<>();
   private PersonAdapter adapterPerson;
   private PersonListViewOrder lvPersons;
   private JBHorizontalSwipe jbHorizontalSwipe;
   private Context context;
+  private boolean refreshList;
+  private Person prevDeletePerson;
+  private ViewGroup vgSwiped;
+  private HashMap<Long, Integer> listItemTopPosMap = new HashMap<>();
+
+  private static final int MOVE_DURATION = 5000;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -90,6 +99,32 @@ public class MainActivity extends ActionBarActivity
         }
       });
 
+/*      this.lvPersons.setOnScrollListener(new AbsListView.OnScrollListener()
+      {
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState)
+        {
+
+        }
+
+        @Override
+        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)
+        {
+          try
+          {
+            if (refreshList)
+            {
+              adapterPerson.notifyDataSetChanged();
+              refreshList = false;
+            }
+          }
+          catch (Exception ex)
+          {
+            Log.e(TAG, "onScroll: " + ex.getMessage());
+          }
+        }
+      });*/
+
     }
     catch (Exception ex)
     {
@@ -106,11 +141,166 @@ public class MainActivity extends ActionBarActivity
     }
 
     @Override
-    public void onTopViewVisibilityChange(boolean visible)
+    public void onSwipeAnimationCompleted(View v)
     {
+      try
+      {
+        View vCurrent = (ViewGroup) v.getParent();
+        animateRemoval(lvPersons, vCurrent);
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG, "onSwipeAnimationCompleted: " + ex.getMessage());
+      }
     }
 
+    @Override
+    public void onTopViewVisibilityChange(View vTop, boolean visible)
+    {
+      try
+      {
+        vgSwiped = (ViewGroup) vTop.getParent();
+        final Person person = (Person) vgSwiped.getTag();
+        person.deleted = !visible;
+//
+//        View vBottom = vgSwiped.findViewWithTag(TAG_BOTTOM_VIEW);
+//        PropertyValuesHolder pvhAlphaCurrent;
+//
+//        if (person.deleted)
+//          pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 0, 1);
+//        else
+//          pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 1, 0);
+//
+//        ObjectAnimator animatorView = ObjectAnimator.ofPropertyValuesHolder(vBottom, pvhAlphaCurrent);
+//        animatorView.setInterpolator(new LinearInterpolator());
+//        animatorView.setDuration(300);
+//        animatorView.start();
+
+
+//        if (person.deleted)
+//        {
+//          if (prevDeletePerson != null)
+//
+//
+//            prevDeletePerson.remove = true;
+//
+//          prevDeletePerson = person;
+//        }
+//        else
+//        {
+//
+//        }
+
+        //adapterPerson.notifyDataSetChanged();
+
+        refreshList = true;
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG, "onTopViewVisibilityChange: " + ex.getMessage());
+      }
+    }
   };
+
+
+  /**
+   * This method animates all other views in the ListView container (not including ignoreView)
+   * into their final positions. It is called after ignoreView has been removed from the
+   * adapter, but before layout has been run. The approach here is to figure out where
+   * everything is now, then allow layout to run, then figure out where everything is after
+   * layout, and then to run animations between all of those start/end positions.
+   */
+  private void animateRemoval(final ListView listview, View viewToRemove)
+  {
+    int firstVisiblePosition = listview.getFirstVisiblePosition();
+
+    for (int i = 0; i < listview.getChildCount(); ++i)
+    {
+      View child = listview.getChildAt(i);
+
+      if (child != viewToRemove)
+      {
+        int position = firstVisiblePosition + i;
+        long itemId = this.adapterPerson.getItemId(position);
+        listItemTopPosMap.put(itemId, child.getTop());
+      }
+    }
+    // Delete the item from the adapter
+    int position = listview.getPositionForView(viewToRemove);
+    this.adapterPerson.remove(this.adapterPerson.getItem(position));
+
+    final ViewTreeObserver observer = listview.getViewTreeObserver();
+    observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
+    {
+      public boolean onPreDraw()
+      {
+        observer.removeOnPreDrawListener(this);
+        boolean firstAnimation = true;
+        int firstVisiblePosition = listview.getFirstVisiblePosition();
+
+        for (int i = 0; i < listview.getChildCount(); ++i)
+        {
+          final View child = listview.getChildAt(i);
+          int position = firstVisiblePosition + i;
+          long itemId = adapterPerson.getItemId(position);
+          Integer startTop = listItemTopPosMap.get(itemId);
+          int top = child.getTop();
+
+          if (startTop != null)
+          {
+            if (startTop != top)
+            {
+              int delta = startTop - top;
+              child.setTranslationY(delta);
+              child.animate().setDuration(MOVE_DURATION).translationY(0);
+
+              if (firstAnimation)
+              {
+                child.animate().withEndAction(new Runnable()
+                {
+                  public void run()
+                  {
+                    //mBackgroundContainer.hideBackground();
+                    listview.setEnabled(true);
+                  }
+                });
+
+                firstAnimation = false;
+              }
+            }
+          }
+          else
+          {
+            // Animate new views along with the others. The catch is that they did not
+            // exist in the start state, so we must calculate their starting position
+            // based on neighboring views.
+            int childHeight = child.getHeight() + listview.getDividerHeight();
+            startTop = top + (i > 0 ? childHeight : -childHeight);
+            int delta = startTop - top;
+            child.setTranslationY(delta);
+            child.animate().setDuration(MOVE_DURATION).translationY(0);
+
+            if (firstAnimation)
+            {
+              child.animate().withEndAction(new Runnable()
+              {
+                public void run()
+                {
+                  //mBackgroundContainer.hideBackground();
+                  listview.setEnabled(true);
+                }
+              });
+
+              firstAnimation = false;
+            }
+          }
+        }
+
+        listItemTopPosMap.clear();
+        return true;
+      }
+    });
+  }
 
 
   public boolean dispatchTouchEvent(MotionEvent ev)

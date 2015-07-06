@@ -109,9 +109,7 @@ public class JBHorizontalSwipe
           ijbHorizontalSwipeTouch.setDisableScrolling(true);
 
           ListView listview = (ListView) vTop.getParent().getParent();
-          ListAdapter listAdapter = listview.getAdapter();
-          IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (IJBHorizontalSwipeAdapter) listAdapter;
-          ijbHorizontalSwipeAdapter.setDisable(true);
+          listview.requestDisallowInterceptTouchEvent(true);
 
           repositionTopView();
         }
@@ -128,45 +126,24 @@ public class JBHorizontalSwipe
   {
     try
     {
-      Log.i(LOG_TAG, "scrollingRight: " + this.scrollingRight + " scrollDeltaX: " + this.scrollDeltaX + " fingerUp: " + fingerUp);
-
-      View rlTopView = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
-
-/*      // Hide the top view if the user was flinging it to the right.
-      if (this.scrollingRight && (this.scrollDeltaX > 50) && fingerUp)
-      {
-        animateViewRight(rlTopView);
-        return;
-      }
-
-      // Show the top view if the user was flinging it to the left.
-      if (!this.scrollingRight && (this.scrollDeltaX > 50) && fingerUp)
-      {
-        animateViewLeft(rlTopView);
-        return;
-      }*/
+      View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
       if (animating || fingerUp)
         return;
 
       if (this.scrollingRight)
       {
-        float x = rlTopView.getX() + this.scrollDeltaX;
-
-//        if (x > this.vScroller.getWidth())
-//          x = this.vScroller.getWidth();
-
-        rlTopView.setX(x);
+        float x = vTop.getX() + this.scrollDeltaX;
+        vTop.setX(x);
       }
       else
       {
-        float x = rlTopView.getX() - this.scrollDeltaX;
-
-//        if (x < 0)
-//          x = 0;
-
-        rlTopView.setX(x);
+        float x = vTop.getX() - this.scrollDeltaX;
+        vTop.setX(x);
       }
+
+      float alpha = (vTop.getWidth() - Math.abs(vTop.getX() - this.scrollDeltaX)) / vTop.getWidth();
+      vTop.setAlpha(alpha);
     }
     catch (Exception ex)
     {
@@ -232,7 +209,7 @@ public class JBHorizontalSwipe
           animateView(vTop, ANIMATE_POSITION_LEFT_INVISIBLE);
           return;
         }
-        else if ((this.initialLeft > 0) && (vTop.getX() >= this.vScroller.getWidth() * 2/3))
+        else if ((this.initialLeft > 0) && (vTop.getX() >= this.vScroller.getWidth() * 2 / 3))
         {
           animateView(vTop, ANIMATE_POSITION_RIGHT_INVISIBLE);
           return;
@@ -242,7 +219,7 @@ public class JBHorizontalSwipe
           animateView(vTop, ANIMATE_POSITION_LEFT_VISIBLE);
           return;
         }
-        else if ((this.initialLeft < 0) && (vTop.getX() > -this.vScroller.getWidth() * 2/3))
+        else if ((this.initialLeft < 0) && (vTop.getX() > -this.vScroller.getWidth() * 2 / 3))
         {
           animateView(vTop, ANIMATE_POSITION_RIGHT_VISIBLE);
           return;
@@ -303,7 +280,7 @@ public class JBHorizontalSwipe
       this.animatorView.start();
 
       if ((this.ijbHorizontalSwipe != null) && (left != this.initialLeft))
-        this.ijbHorizontalSwipe.onTopViewVisibilityChange((position == ANIMATE_POSITION_LEFT_VISIBLE) || (position == ANIMATE_POSITION_RIGHT_VISIBLE));
+        this.ijbHorizontalSwipe.onTopViewVisibilityChange(vTop, (position == ANIMATE_POSITION_LEFT_VISIBLE) || (position == ANIMATE_POSITION_RIGHT_VISIBLE));
     }
     catch (Exception ex)
     {
@@ -329,6 +306,11 @@ public class JBHorizontalSwipe
     {
       animating = false;
       cancelAnimation = false;
+      View v = (View) animatorView.getTarget();
+      v.setAlpha(1);
+
+      if (ijbHorizontalSwipe != null)
+        ijbHorizontalSwipe.onSwipeAnimationCompleted(v);
     }
 
     @Override
@@ -348,7 +330,9 @@ public class JBHorizontalSwipe
   {
     void onReposition(float x, boolean scrollingRight, float scrollDelta);
 
-    void onTopViewVisibilityChange(boolean visible);
+    void onTopViewVisibilityChange(View vTop, boolean visible);
+
+    void onSwipeAnimationCompleted(View v);
   }
 
   public interface IJBHorizontalSwipeTouch
@@ -358,7 +342,6 @@ public class JBHorizontalSwipe
 
   public interface IJBHorizontalSwipeAdapter
   {
-    void setDisable(boolean disable);
     View getSelectedView();
   }
 }

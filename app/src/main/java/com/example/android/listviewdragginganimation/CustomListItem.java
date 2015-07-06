@@ -3,6 +3,7 @@ package com.example.android.listviewdragginganimation;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
@@ -10,7 +11,7 @@ import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 /**
  * Created by Johann on 6/27/15.
  */
-public class CustomListItem extends RelativeLayout
+public class CustomListItem extends FrameLayout // RelativeLayout
 {
   private JBHorizontalSwipe jbHorizontalSwipe;
 
