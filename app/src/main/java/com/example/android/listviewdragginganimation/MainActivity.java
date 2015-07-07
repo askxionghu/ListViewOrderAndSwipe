@@ -161,11 +161,7 @@ public class MainActivity extends ActionBarActivity
         PropertyValuesHolder pvhAlphaCurrent;
 
         ButtonBottomView btnUndo = (ButtonBottomView) vBottom.findViewById(R.id.btnUndo);
-
-        if (person.deleted)
-          btnUndo.setIgnoreMotionEvents(false);
-        else
-          btnUndo.setIgnoreMotionEvents(true);
+        adapterPerson.onItemSwiped(person, btnUndo);
 
         if (person.deleted)
           pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 0, 1);

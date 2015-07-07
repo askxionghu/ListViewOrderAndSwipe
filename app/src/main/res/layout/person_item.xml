@@ -15,26 +15,14 @@
             android:tag="BottomView"
             android:alpha="0">
 
-            <!--<TextView-->
-                <!--android:id="@+id/tvUndo"-->
-                <!--android:layout_width="wrap_content"-->
-                <!--android:layout_height="match_parent"-->
-                <!--android:layout_alignParentRight="true"-->
-                <!--android:background="@drawable/listview_item_bottom_button"-->
-                <!--android:focusableInTouchMode="true"-->
-                <!--android:gravity="center"-->
-                <!--android:paddingLeft="20dp"-->
-                <!--android:paddingRight="20dp"-->
-                <!--android:text="UNDO"-->
-                <!--android:textColor="@color/orange_300"-->
-                <!--android:textSize="18sp"/>-->
-
             <com.example.android.listviewdragginganimation.ButtonBottomView
                 android:id="@+id/btnUndo"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_alignParentRight="true"
                 android:background="@drawable/listview_item_bottom_button"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
                 android:gravity="center"
                 android:paddingLeft="20dp"
                 android:paddingRight="20dp"

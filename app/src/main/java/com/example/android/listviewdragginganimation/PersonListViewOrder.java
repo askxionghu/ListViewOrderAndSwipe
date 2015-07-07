@@ -303,11 +303,6 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
   @Override
   public boolean onTouchEvent(final MotionEvent event)
   {
-    // NOTE: Removing this try...catch will cause a Null exception to occur at:
-    // if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
-    // This happens when the user taps on a list item. Apparently a bug  inside
-    // of Android is causing this. Checking v != null doesn't help.
-    // DO NOT REMOVE THE try...catch
     try
     {
       int action = event.getAction() & MotionEvent.ACTION_MASK;
@@ -327,7 +322,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
 
           // If the view contains a tag set to "DragIcon", it means that the user wants to
           // reorder the list item.
-          if ((v != null) && (v.getTag().equals(TAG_DRAG_ICON)))
+          if ((v != null) && (v.getTag() != null) && (v.getTag().equals(TAG_DRAG_ICON)))
           {
             mTotalOffset = 0;
 

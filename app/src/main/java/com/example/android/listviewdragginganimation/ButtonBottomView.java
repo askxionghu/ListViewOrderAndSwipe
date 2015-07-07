@@ -44,7 +44,10 @@ public class ButtonBottomView extends Button
 //      }
 
       if (this.ignoreMotionEvents)
+      {
+        super.onTouchEvent(event);
         return false;
+      }
 
       return super.onTouchEvent(event);
     }

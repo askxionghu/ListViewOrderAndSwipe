@@ -92,21 +92,18 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
 
       vTop.setOnTouchListener(onTouchListenerTopView);
 
-      ButtonBottomView btnUndo = (ButtonBottomView) v.findViewById(R.id.btnUndo);
-
       if (person.deleted)
       {
         vTop.setX(vTop.getWidth());
         vBottom.setAlpha(1);
-        btnUndo.setIgnoreMotionEvents(false);
-        btnUndo.setOnClickListener(onUndoClickListener);
       }
       else
       {
         vTop.setX(0);
-        btnUndo.setIgnoreMotionEvents(true);
-        btnUndo.setOnClickListener(null);
       }
+
+      ButtonBottomView btnUndo = (ButtonBottomView) v.findViewById(R.id.btnUndo);
+      onItemSwiped(person, btnUndo);
 
       return v;
     }
@@ -114,6 +111,28 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     {
       Log.e(TAG, "getView: " + ex.getMessage());
       return convertView;
+    }
+  }
+
+
+  public void onItemSwiped(Person person, ButtonBottomView btnUndo)
+  {
+    try
+    {
+      if (person.deleted)
+      {
+        btnUndo.setIgnoreMotionEvents(false);
+        btnUndo.setOnClickListener(onUndoClickListener);
+      }
+      else
+      {
+        btnUndo.setIgnoreMotionEvents(true);
+        btnUndo.setOnClickListener(null);
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG, "onItemSwiped: " + ex.getMessage());
     }
   }
 
