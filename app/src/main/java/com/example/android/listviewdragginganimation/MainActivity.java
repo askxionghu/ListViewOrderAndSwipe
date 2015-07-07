@@ -1,5 +1,6 @@
 package com.example.android.listviewdragginganimation;
 
+import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.content.Context;
@@ -38,12 +39,13 @@ public class MainActivity extends ActionBarActivity
   private PersonListViewOrder lvPersons;
   private JBHorizontalSwipe jbHorizontalSwipe;
   private Context context;
-  private boolean refreshList;
-  private Person prevDeletePerson;
   private ViewGroup vgSwiped;
   private HashMap<Long, Integer> listItemTopPosMap = new HashMap<>();
+  private boolean removePrevDeleted;
+  private Person prevDeletedPerson;
+  private ListViewItemBackground listViewItemBackground;
 
-  private static final int MOVE_DURATION = 5000;
+  private static final int MOVE_DURATION = 150;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -75,6 +77,8 @@ public class MainActivity extends ActionBarActivity
       this.persons.add(new Person(getNewId(), "Russell", BitmapFactory.decodeResource(getResources(), R.drawable.ic_russell)));
       this.persons.add(new Person(getNewId(), "Tom", BitmapFactory.decodeResource(getResources(), R.drawable.ic_tom)));
       this.persons.add(new Person(getNewId(), "Will", BitmapFactory.decodeResource(getResources(), R.drawable.ic_will)));
+
+      this.listViewItemBackground = (ListViewItemBackground) findViewById(R.id.listViewBackground);
 
       this.lvPersons = (PersonListViewOrder) findViewById(R.id.lvPersons);
       this.lvPersons.setPersonList(this.persons);
@@ -141,20 +145,6 @@ public class MainActivity extends ActionBarActivity
     }
 
     @Override
-    public void onSwipeAnimationCompleted(View v)
-    {
-      try
-      {
-        View vCurrent = (ViewGroup) v.getParent();
-        animateRemoval(lvPersons, vCurrent);
-      }
-      catch (Exception ex)
-      {
-        Log.e(TAG, "onSwipeAnimationCompleted: " + ex.getMessage());
-      }
-    }
-
-    @Override
     public void onTopViewVisibilityChange(View vTop, boolean visible)
     {
       try
@@ -162,38 +152,78 @@ public class MainActivity extends ActionBarActivity
         vgSwiped = (ViewGroup) vTop.getParent();
         final Person person = (Person) vgSwiped.getTag();
         person.deleted = !visible;
-//
-//        View vBottom = vgSwiped.findViewWithTag(TAG_BOTTOM_VIEW);
-//        PropertyValuesHolder pvhAlphaCurrent;
-//
-//        if (person.deleted)
-//          pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 0, 1);
-//        else
-//          pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 1, 0);
-//
-//        ObjectAnimator animatorView = ObjectAnimator.ofPropertyValuesHolder(vBottom, pvhAlphaCurrent);
-//        animatorView.setInterpolator(new LinearInterpolator());
-//        animatorView.setDuration(300);
-//        animatorView.start();
+        removePrevDeleted = false;
 
+        if ((person.deleted) && (prevDeletedPerson != null) && (person != prevDeletedPerson))
+          removePrevDeleted = true;
 
-//        if (person.deleted)
-//        {
-//          if (prevDeletePerson != null)
-//
-//
-//            prevDeletePerson.remove = true;
-//
-//          prevDeletePerson = person;
-//        }
-//        else
-//        {
-//
-//        }
+        View vBottom = vgSwiped.findViewWithTag(TAG_BOTTOM_VIEW);
+        PropertyValuesHolder pvhAlphaCurrent;
 
-        //adapterPerson.notifyDataSetChanged();
+        ButtonBottomView btnUndo = (ButtonBottomView) vBottom.findViewById(R.id.btnUndo);
 
-        refreshList = true;
+        if (person.deleted)
+          btnUndo.setIgnoreMotionEvents(false);
+        else
+          btnUndo.setIgnoreMotionEvents(true);
+
+        if (person.deleted)
+          pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 0, 1);
+        else
+          pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 1, 0);
+
+        ObjectAnimator animatorView = ObjectAnimator.ofPropertyValuesHolder(vBottom, pvhAlphaCurrent);
+        animatorView.setInterpolator(new LinearInterpolator());
+        animatorView.setDuration(300);
+
+        animatorView.addListener(new Animator.AnimatorListener()
+        {
+          @Override
+          public void onAnimationStart(Animator animation)
+          {
+
+          }
+
+          @Override
+          public void onAnimationEnd(Animator animation)
+          {
+            try
+            {
+              if (removePrevDeleted)
+              {
+                int pos = (int) adapterPerson.getPosition(prevDeletedPerson);
+
+                if ((pos >= lvPersons.getFirstVisiblePosition() ) && (pos <= lvPersons.getLastVisiblePosition()))
+                {
+                  View vPrevDeleted = lvPersons.getChildAt(pos - lvPersons.getFirstVisiblePosition());
+                  listViewItemBackground.showBackground(vPrevDeleted);
+                  animateRemoval(lvPersons, vPrevDeleted);
+                }
+              }
+
+              if (person.deleted)
+                prevDeletedPerson = person;;
+            }
+            catch (Exception ex)
+            {
+              Log.e(TAG, "onTopViewVisibilityChange.onAnimationEnd: " + ex.getMessage());
+            }
+          }
+
+          @Override
+          public void onAnimationCancel(Animator animation)
+          {
+
+          }
+
+          @Override
+          public void onAnimationRepeat(Animator animation)
+          {
+
+          }
+        });
+
+        animatorView.start();
       }
       catch (Exception ex)
       {
@@ -210,7 +240,7 @@ public class MainActivity extends ActionBarActivity
    * everything is now, then allow layout to run, then figure out where everything is after
    * layout, and then to run animations between all of those start/end positions.
    */
-  private void animateRemoval(final ListView listview, View viewToRemove)
+  private void animateRemoval(final ListView listview, final View viewToRemove)
   {
     int firstVisiblePosition = listview.getFirstVisiblePosition();
 

@@ -32,6 +32,8 @@ public class JBHorizontalSwipe
   private boolean animating;
   private boolean cancelAnimation;
   private float initialLeft;
+  private boolean topViewChanged;
+  private boolean topViewVisible;
 
   public final static int ANIMATE_POSITION_LEFT_VISIBLE = 0;
   public final static int ANIMATE_POSITION_LEFT_INVISIBLE = 1;
@@ -280,7 +282,13 @@ public class JBHorizontalSwipe
       this.animatorView.start();
 
       if ((this.ijbHorizontalSwipe != null) && (left != this.initialLeft))
-        this.ijbHorizontalSwipe.onTopViewVisibilityChange(vTop, (position == ANIMATE_POSITION_LEFT_VISIBLE) || (position == ANIMATE_POSITION_RIGHT_VISIBLE));
+      {
+        this.topViewChanged = true;
+        this.topViewVisible = (position == ANIMATE_POSITION_LEFT_VISIBLE) || (position == ANIMATE_POSITION_RIGHT_VISIBLE);
+      }
+      else
+        this.topViewChanged = false;
+
     }
     catch (Exception ex)
     {
@@ -309,8 +317,8 @@ public class JBHorizontalSwipe
       View v = (View) animatorView.getTarget();
       v.setAlpha(1);
 
-      if (ijbHorizontalSwipe != null)
-        ijbHorizontalSwipe.onSwipeAnimationCompleted(v);
+      if ((ijbHorizontalSwipe != null) && topViewChanged)
+        ijbHorizontalSwipe.onTopViewVisibilityChange(v, topViewVisible);
     }
 
     @Override
@@ -331,8 +339,6 @@ public class JBHorizontalSwipe
     void onReposition(float x, boolean scrollingRight, float scrollDelta);
 
     void onTopViewVisibilityChange(View vTop, boolean visible);
-
-    void onSwipeAnimationCompleted(View v);
   }
 
   public interface IJBHorizontalSwipeTouch

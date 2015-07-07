@@ -30,6 +30,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
 {
   private final String TAG = "PersonAdapter";
   private final String TAG_TOP_VIEW = "TopView";
+  private final String TAG_BOTTOM_VIEW = "BottomView";
 
   final int INVALID_ID = -1;
 
@@ -80,6 +81,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
 
       v.setTag(person);
       View vTop = v.findViewWithTag(TAG_TOP_VIEW);
+      View vBottom = v.findViewWithTag(TAG_BOTTOM_VIEW);
 
       ImageView ivIcon = (ImageView) v.findViewById(R.id.ivIcon);
 
@@ -90,13 +92,20 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
 
       vTop.setOnTouchListener(onTouchListenerTopView);
 
+      ButtonBottomView btnUndo = (ButtonBottomView) v.findViewById(R.id.btnUndo);
+
       if (person.deleted)
       {
         vTop.setX(vTop.getWidth());
+        vBottom.setAlpha(1);
+        btnUndo.setIgnoreMotionEvents(false);
+        btnUndo.setOnClickListener(onUndoClickListener);
       }
       else
       {
         vTop.setX(0);
+        btnUndo.setIgnoreMotionEvents(true);
+        btnUndo.setOnClickListener(null);
       }
 
       return v;
@@ -109,7 +118,25 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
   }
 
 
-  public void expand(final View v)
+  private View.OnClickListener onUndoClickListener = new View.OnClickListener()
+  {
+    @Override
+    public void onClick(View v)
+    {
+      try
+      {
+        int x = 0;
+        x++;
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG, "onUndoClickListener.onClick: " + ex.getMessage());
+      }
+    }
+  };
+
+
+  /*public void expand(final View v)
   {
     v.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     final int targetHeight = v.getMeasuredHeight();
@@ -172,7 +199,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     // 1dp/ms
     a.setDuration((int) (initialHeight / v.getContext().getResources().getDisplayMetrics().density));
     v.startAnimation(a);
-  }
+  }*/
 
 
   private Animation.AnimationListener animListenerCollapsedRow = new Animation.AnimationListener()
@@ -254,6 +281,12 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     long id = this.idMap.get(person.toString());
 
     return id;
+  }
+
+
+  public long getItemIdByPerson(Person person)
+  {
+    return this.idMap.get(person.toString());
   }
 
   @Override
