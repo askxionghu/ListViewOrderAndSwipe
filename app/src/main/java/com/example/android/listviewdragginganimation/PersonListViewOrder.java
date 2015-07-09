@@ -107,6 +107,7 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
 
   private boolean disableScrolling;
   private Context context;
+  private IVerticalScrollCallback iVerticalScrollCallback;
 
   public PersonListViewOrder(Context context)
   {
@@ -364,6 +365,11 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
 
             return false;
           }
+          else if ((Math.abs(deltaY) > 0) && (iVerticalScrollCallback != null))
+          {
+            iVerticalScrollCallback.onVerticalScroll();
+          }
+
           break;
         case MotionEvent.ACTION_UP:
 
@@ -420,6 +426,12 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
     }
 
     return super.onTouchEvent(event);
+  }
+
+
+  public void setVerticalScrollCallback(IVerticalScrollCallback iVerticalScrollCallback)
+  {
+    this.iVerticalScrollCallback = iVerticalScrollCallback;
   }
 
 
@@ -770,4 +782,9 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
       }
     }
   };
+
+  interface IVerticalScrollCallback
+  {
+    void onVerticalScroll();
+  }
 }

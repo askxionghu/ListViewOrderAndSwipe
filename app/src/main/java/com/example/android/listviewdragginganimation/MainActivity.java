@@ -1,6 +1,5 @@
 /*
-TODO: Remove deleted item if listview scrolled or another row starts to be moved.
-      Swipe a deleted item back into view from either left or right
+TODO: Swipe a deleted item back into view from either left or right
 
  */
 
@@ -24,6 +23,7 @@ import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -115,32 +115,28 @@ public class MainActivity extends ActionBarActivity
         }
       });
 
-/*      this.lvPersons.setOnScrollListener(new AbsListView.OnScrollListener()
+      this.lvPersons.setVerticalScrollCallback(new PersonListViewOrder.IVerticalScrollCallback()
       {
         @Override
-        public void onScrollStateChanged(AbsListView view, int scrollState)
-        {
-
-        }
-
-        @Override
-        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)
+        public void onVerticalScroll()
         {
           try
           {
-            if (refreshList)
+            if (prevDeletedPerson != null)
             {
-              adapterPerson.notifyDataSetChanged();
-              refreshList = false;
+              int pos = (int) adapterPerson.getPosition(prevDeletedPerson);
+              View vPrevDeleted = lvPersons.getChildAt(pos - lvPersons.getFirstVisiblePosition());
+              adapterPerson.animateRemoval(vPrevDeleted);
+              removePrevDeleted = false;
+              prevDeletedPerson = null;
             }
           }
           catch (Exception ex)
           {
-            Log.e(TAG, "onScroll: " + ex.getMessage());
+            Log.e(TAG, "onVerticalScroll: " + ex.getMessage());
           }
         }
-      });*/
-
+      });
     }
     catch (Exception ex)
     {

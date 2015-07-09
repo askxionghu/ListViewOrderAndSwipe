@@ -114,6 +114,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       }
 
       ButtonBottomView btnUndo = (ButtonBottomView) v.findViewById(R.id.btnUndo);
+      btnUndo.setPressed(false);
       onItemSwiped(person, btnUndo);
 
       return v;
