@@ -1,6 +1,6 @@
 /**
  * This code is partially based upon code written by Chet Haase at Google.
- * Chet's video can be viewd at:
+ * Chet's video can be viewed at:
  *
  * https://www.youtube.com/watch?v=YCHNAi9kJI4
  *

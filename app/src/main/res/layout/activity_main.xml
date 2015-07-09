@@ -10,16 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!--<com.example.android.listviewdragginganimation.PersonListViewOrder-->
-            <!--android:id="@+id/lvPersons"-->
-            <!--android:layout_width="match_parent"-->
-            <!--android:layout_height="match_parent"-->
-            <!--android:background="@color/grey_300"-->
-            <!--android:cacheColorHint="#00000000"-->
-            <!--android:divider="#c0c0c0"-->
-            <!--android:dividerHeight="1dp"-->
-            <!--android:scrollingCache="true"/>-->
-
         <com.example.android.listviewdragginganimation.PersonListViewOrder
             android:id="@+id/lvPersons"
             android:layout_width="match_parent"

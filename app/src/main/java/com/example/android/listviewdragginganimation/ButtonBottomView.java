@@ -7,7 +7,7 @@ import android.view.MotionEvent;
 import android.widget.Button;
 
 /**
- * Created by Johann on 7/7/15.
+ * A custom button control that is used on the bottom view of widget that uses the JBHorizontalSwipe library.
  */
 public class ButtonBottomView extends Button
 {
@@ -25,6 +25,10 @@ public class ButtonBottomView extends Button
     super(context, attrs, defStyleAttr);
   }
 
+  /**
+   * Enables or disables the button from responding to touch events.
+   * @param ignore If set to true, touch events will be ignored by the button.
+   */
   public void setIgnoreMotionEvents(boolean ignore)
   {
     this.ignoreMotionEvents = ignore;
@@ -35,14 +39,6 @@ public class ButtonBottomView extends Button
   {
     try
     {
-//      int action = event.getAction() & MotionEvent.ACTION_MASK;
-//
-//      switch (action)
-//      {
-//        case MotionEvent.ACTION_DOWN:
-//          break;
-//      }
-
       if (this.ignoreMotionEvents)
       {
         super.onTouchEvent(event);

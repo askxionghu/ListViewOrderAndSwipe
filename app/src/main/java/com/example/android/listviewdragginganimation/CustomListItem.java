@@ -4,14 +4,13 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
-import android.widget.RelativeLayout;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 
 /**
- * Created by Johann on 6/27/15.
+ * A custom FrameLayout that intercept touch events and routes them the a JBHorizontalSwipe controller.
  */
-public class CustomListItem extends FrameLayout // RelativeLayout
+public class CustomListItem extends FrameLayout
 {
   private JBHorizontalSwipe jbHorizontalSwipe;
 
@@ -25,15 +24,6 @@ public class CustomListItem extends FrameLayout // RelativeLayout
     super(context, attrs, defStyleAttr);
   }
 
-/*  @Override
-  public boolean dispatchTouchEvent(MotionEvent ev)
-  {
-    if (this.jbHorizontalSwipe != null)
-      this.jbHorizontalSwipe.onScrollerDispatchTouchEventListener(this, ev);
-
-    return super.dispatchTouchEvent(ev);
-  }*/
-
 
   @Override
   public boolean onTouchEvent(MotionEvent ev)
@@ -44,7 +34,10 @@ public class CustomListItem extends FrameLayout // RelativeLayout
     return super.onTouchEvent(ev);
   }
 
-
+  /**
+   * Sets a reference to a JBHorizontalSwipe controller.
+   * @param jbHorizontalSwipe The instance of a JBHorizontalSwipe controller.
+   */
   public void setJBHeaderRef(JBHorizontalSwipe jbHorizontalSwipe)
   {
     this.jbHorizontalSwipe = jbHorizontalSwipe;

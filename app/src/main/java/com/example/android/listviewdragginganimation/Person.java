@@ -3,7 +3,7 @@ package com.example.android.listviewdragginganimation;
 import android.graphics.Bitmap;
 
 /**
- * Created by Johann on 6/24/15.
+ * Holds information about a person.
  */
 public class Person
 {
@@ -11,7 +11,6 @@ public class Person
   public String name;
   public Bitmap bitmap;
   public boolean deleted;
-  public boolean remove;
 
   public Person(long id, String name, Bitmap bitmap)
   {

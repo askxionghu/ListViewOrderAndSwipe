@@ -1,3 +1,30 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Johann Blake
+ *
+ * https://www.linkedin.com/in/johannblake
+ * https://plus.google.com/+JohannBlake
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package com.johannblake.widgets.jbhorizonalswipelib;
 
 import android.animation.Animator;
@@ -13,7 +40,15 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 
 /**
- * Created by Johann on 6/27/15.
+ * This is a library that allows you to create horizontally swiped views in Android where the swiped
+ * view is over top another view. Typically, this will be used to swipe listview items but can be used
+ * for any kind of UI widget where you need to reveal a lower view.
+ *
+ * Google's Gmail app allows you to swipe an email's summary in a listview causing the item to be delete.
+ * When swiped, a view is exposed below the swiped view that shows the label "Deleted" on the far left
+ * and a button on the far right labeled "Undo". You can undo the delete either by swiping the top view
+ * back into place or tapping on the Undo button. This module provides the functionality to accomplish
+ * the same feat.
  */
 public class JBHorizontalSwipe
 {
@@ -127,6 +162,9 @@ public class JBHorizontalSwipe
   }
 
 
+  /**
+   * Repositions the top view when the user scrolls it horizontally.
+   */
   private void repositionTopView()
   {
     try
@@ -155,6 +193,7 @@ public class JBHorizontalSwipe
           vTop.setX(x);
       }
 
+      // Change the alpha of the top view as it is being scrolled making it dimmer as it moves off the screen.
       float alpha = (vTop.getWidth() - Math.abs(vTop.getX() - this.scrollDeltaX)) / vTop.getWidth();
       vTop.setAlpha(alpha);
     }
@@ -237,7 +276,7 @@ public class JBHorizontalSwipe
           animateView(vTop, ANIMATE_POSITION_RIGHT_VISIBLE);
           return;
         }
-        else //if (vTop.getX() <= -this.vScroller.getWidth() / 3)
+        else
         {
           animateView(vTop, ANIMATE_POSITION_LEFT_INVISIBLE);
           return;
@@ -256,6 +295,12 @@ public class JBHorizontalSwipe
   }
 
 
+  /**
+   * Makes the top view visible by animating it onto the screen from either
+   * the left or right side of the container depending on where its current
+   * left position is located.
+   * @param vTop The top view to make visible.
+   */
   public void showTopView(View vTop)
   {
     try
@@ -275,7 +320,12 @@ public class JBHorizontalSwipe
   }
 
   /**
-   * Animates the view.
+   * Shows or hides the top view by animating on to or off of the screen.
+   * @param vTop The top view.
+   * @param position Use ANIMATE_POSITION_LEFT_INVISIBLE to slide it off the screen in the left
+   *                 direction. Use ANIMATE_POSITION_RIGHT_INVISIBLE to slide it off the screen
+   *                 in the right direction. Set it to ANIMATE_POSITION_LEFT_VISIBLE or
+   *                 ANIMATE_POSITION_RIGHT_VISIBLE to slide it on to the screen.
    */
   public void animateView(View vTop, int position)
   {
