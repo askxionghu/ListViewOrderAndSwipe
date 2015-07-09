@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.Transformation;
@@ -17,6 +18,7 @@ import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -32,6 +34,8 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
   private final String TAG_TOP_VIEW = "TopView";
   private final String TAG_BOTTOM_VIEW = "BottomView";
 
+  private static final int MOVE_DURATION = 150;
+
   final int INVALID_ID = -1;
 
   private List<Person> items;
@@ -40,16 +44,22 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
   private JBHorizontalSwipe jbHorizontalSwipe;
   private View selectedView;
   private Person personToRemove;
+  private ListViewItemBackground listViewItemBackground;
+  private MainActivity.IListItemControls iListItemControls;
 
-  HashMap<String, Integer> idMap = new HashMap<>();
+  private HashMap<String, Integer> idMap = new HashMap<>();
+  private HashMap<Long, Integer> listItemTopPosMap = new HashMap<>();
 
-  public PersonAdapter(Context context, int textViewResourceId, List<Person> items, JBHorizontalSwipe jbHorizontalSwipe)
+  public PersonAdapter(Context context, int textViewResourceId, List<Person> items, JBHorizontalSwipe jbHorizontalSwipe, PersonListViewOrder listview, MainActivity.IListItemControls iListItemControls)
   {
     super(context, textViewResourceId, items);
 
     this.items = items;
     this.context = context;
     this.jbHorizontalSwipe = jbHorizontalSwipe;
+    this.iListItemControls = iListItemControls;
+    this.listview = listview;
+    this.listViewItemBackground = (ListViewItemBackground) listview.getParent();
 
     for (int i = 0; i < items.size(); ++i)
     {
@@ -100,6 +110,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       else
       {
         vTop.setX(0);
+        vBottom.setAlpha(0);
       }
 
       ButtonBottomView btnUndo = (ButtonBottomView) v.findViewById(R.id.btnUndo);
@@ -144,8 +155,15 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     {
       try
       {
-        int x = 0;
-        x++;
+        iListItemControls.onUndoClicked(v);
+
+        View vRoot = getItemRootViewFromBottomControl(v);
+
+        Person person = (Person) vRoot.getTag();
+        person.deleted = false;
+
+        View vTop = vRoot.findViewWithTag(TAG_TOP_VIEW);
+        jbHorizontalSwipe.showTopView(vTop);
       }
       catch (Exception ex)
       {
@@ -153,6 +171,119 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       }
     }
   };
+
+
+  private View getItemRootViewFromBottomControl(View v)
+  {
+    return (View) v.getParent().getParent().getParent();
+  }
+
+
+  /**
+   * This method animates all other views in the ListView container (not including ignoreView)
+   * into their final positions. It is called after ignoreView has been removed from the
+   * adapter, but before layout has been run. The approach here is to figure out where
+   * everything is now, then allow layout to run, then figure out where everything is after
+   * layout, and then to run animations between all of those start/end positions.
+   */
+  public void animateRemoval(final View viewToRemove)
+  {
+    int position = listview.getPositionForView(viewToRemove);
+
+    if (position == listview.getLastVisiblePosition())
+      listViewItemBackground.hideBackground();
+    else
+      listViewItemBackground.showBackground(viewToRemove);
+
+    int firstVisiblePosition = listview.getFirstVisiblePosition();
+
+    for (int i = 0; i < listview.getChildCount(); ++i)
+    {
+      View child = listview.getChildAt(i);
+
+      if (child != viewToRemove)
+      {
+        int pos = firstVisiblePosition + i;
+        long itemId = getItemId(pos);
+        listItemTopPosMap.put(itemId, child.getTop());
+      }
+    }
+    // Delete the item from the adapter
+    remove(getItem(position));
+
+    final ViewTreeObserver observer = listview.getViewTreeObserver();
+    observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
+    {
+      public boolean onPreDraw()
+      {
+        observer.removeOnPreDrawListener(this);
+        boolean firstAnimation = true;
+        int firstVisiblePosition = listview.getFirstVisiblePosition();
+
+        for (int i = 0; i < listview.getChildCount(); ++i)
+        {
+          final View child = listview.getChildAt(i);
+          int position = firstVisiblePosition + i;
+          long itemId = getItemId(position);
+          Integer startTop = listItemTopPosMap.get(itemId);
+          int top = child.getTop();
+
+          if (startTop != null)
+          {
+            if (startTop != top)
+            {
+              int delta = startTop - top;
+              child.setTranslationY(delta);
+              child.animate().setDuration(MOVE_DURATION).translationY(0);
+
+              if (firstAnimation)
+              {
+                child.animate().withEndAction(new Runnable()
+                {
+                  public void run()
+                  {
+                    listViewItemBackground.hideBackground();
+                    listview.setEnabled(true);
+                  }
+                });
+
+                firstAnimation = false;
+              }
+            }
+          }
+          else
+          {
+            // Animate new views along with the others. The catch is that they did not
+            // exist in the start state, so we must calculate their starting position
+            // based on neighboring views.
+            int childHeight = child.getHeight() + listview.getDividerHeight();
+            startTop = top + (i > 0 ? childHeight : -childHeight);
+            int delta = startTop - top;
+            child.setTranslationY(delta);
+            child.animate().setDuration(MOVE_DURATION).translationY(0);
+
+            if (firstAnimation)
+            {
+              child.animate().withEndAction(new Runnable()
+              {
+                public void run()
+                {
+                  listViewItemBackground.hideBackground();
+                  listview.setEnabled(true);
+                }
+              });
+
+              firstAnimation = false;
+            }
+          }
+        }
+
+        listview.setPressed(false);
+        listItemTopPosMap.clear();
+        return true;
+      }
+    });
+  }
 
 
   /*public void expand(final View v)
@@ -249,7 +380,6 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
 
     }
   };
-
 
 
   private View.OnTouchListener onTouchListenerTopView = new View.OnTouchListener()

@@ -80,12 +80,15 @@ public class JBHorizontalSwipe
         // Reposition the top view if necessary.
         this.fingerUp = true;
 
-        View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
+        if (this.vScroller != null)
+        {
+          View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
-        if (vTop.getX() != 0)
-          processViewPosition(vTop);
+          if ((vTop != null) && (vTop.getX() != 0))
+            processViewPosition(vTop);
 
-        this.vScroller = null;
+          this.vScroller = null;
+        }
       }
       else if (event.getAction() == MotionEvent.ACTION_DOWN)
       {
@@ -105,7 +108,7 @@ public class JBHorizontalSwipe
 
         View vTop = this.vScroller.findViewWithTag(TAG_TOP_VIEW);
 
-        if (((this.scrollDeltaX > 10) && (this.scrollDeltaY < 10)) || (vTop.getX() != 0))
+        if (((this.scrollDeltaX > 10) && (this.scrollDeltaY < 10)) || ((vTop != null) && (vTop.getX() != 0)))
         {
           IJBHorizontalSwipeTouch ijbHorizontalSwipeTouch = (IJBHorizontalSwipeTouch) this.vScroller.getParent();
           ijbHorizontalSwipeTouch.setDisableScrolling(true);
@@ -244,6 +247,24 @@ public class JBHorizontalSwipe
     }
   }
 
+
+  public void showTopView(View vTop)
+  {
+    try
+    {
+      if (vTop.getX() < 0)
+        animateView(vTop, ANIMATE_POSITION_RIGHT_VISIBLE);
+      else
+        animateView(vTop, ANIMATE_POSITION_LEFT_VISIBLE);
+
+      this.topViewVisible = true;
+      this.topViewChanged = true;
+    }
+    catch (Exception ex)
+    {
+      Log.e(LOG_TAG, "showTopView: " + ex.toString());
+    }
+  }
 
   /**
    * Animates the view.

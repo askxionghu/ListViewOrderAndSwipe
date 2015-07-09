@@ -1,3 +1,9 @@
+/*
+TODO: Remove deleted item if listview scrolled or another row starts to be moved.
+      Swipe a deleted item back into view from either left or right
+
+ */
+
 package com.example.android.listviewdragginganimation;
 
 import android.animation.Animator;
@@ -40,12 +46,10 @@ public class MainActivity extends ActionBarActivity
   private JBHorizontalSwipe jbHorizontalSwipe;
   private Context context;
   private ViewGroup vgSwiped;
-  private HashMap<Long, Integer> listItemTopPosMap = new HashMap<>();
+
   private boolean removePrevDeleted;
   private Person prevDeletedPerson;
-  private ListViewItemBackground listViewItemBackground;
 
-  private static final int MOVE_DURATION = 150;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -78,11 +82,19 @@ public class MainActivity extends ActionBarActivity
       this.persons.add(new Person(getNewId(), "Tom", BitmapFactory.decodeResource(getResources(), R.drawable.ic_tom)));
       this.persons.add(new Person(getNewId(), "Will", BitmapFactory.decodeResource(getResources(), R.drawable.ic_will)));
 
-      this.listViewItemBackground = (ListViewItemBackground) findViewById(R.id.listViewBackground);
 
       this.lvPersons = (PersonListViewOrder) findViewById(R.id.lvPersons);
       this.lvPersons.setPersonList(this.persons);
-      this.adapterPerson = new PersonAdapter(this, R.layout.person_item, persons, this.jbHorizontalSwipe);
+      this.adapterPerson = new PersonAdapter(this, R.layout.person_item, persons, this.jbHorizontalSwipe, this.lvPersons, new IListItemControls()
+      {
+        @Override
+        public void onUndoClicked(View v)
+        {
+          removePrevDeleted = false;
+          prevDeletedPerson = null;
+        }
+      });
+
       this.adapterPerson.setListView(this.lvPersons);
       this.lvPersons.setAdapter(this.adapterPerson);
 
@@ -136,6 +148,7 @@ public class MainActivity extends ActionBarActivity
     }
   }
 
+
   private JBHorizontalSwipe.IJBHorizontalSwipe ijbHorizontalSwipe = new JBHorizontalSwipe.IJBHorizontalSwipe()
   {
     @Override
@@ -153,6 +166,9 @@ public class MainActivity extends ActionBarActivity
         final Person person = (Person) vgSwiped.getTag();
         person.deleted = !visible;
         removePrevDeleted = false;
+
+        if ((person == prevDeletedPerson) && !person.deleted)
+          prevDeletedPerson = null;
 
         if ((person.deleted) && (prevDeletedPerson != null) && (person != prevDeletedPerson))
           removePrevDeleted = true;
@@ -189,16 +205,19 @@ public class MainActivity extends ActionBarActivity
               {
                 int pos = (int) adapterPerson.getPosition(prevDeletedPerson);
 
-                if ((pos >= lvPersons.getFirstVisiblePosition() ) && (pos <= lvPersons.getLastVisiblePosition()))
+                if ((pos >= lvPersons.getFirstVisiblePosition()) && (pos <= lvPersons.getLastVisiblePosition()))
                 {
                   View vPrevDeleted = lvPersons.getChildAt(pos - lvPersons.getFirstVisiblePosition());
-                  listViewItemBackground.showBackground(vPrevDeleted);
-                  animateRemoval(lvPersons, vPrevDeleted);
+                  adapterPerson.animateRemoval(vPrevDeleted);
+                }
+                else
+                {
+                  adapterPerson.remove(prevDeletedPerson);
                 }
               }
 
               if (person.deleted)
-                prevDeletedPerson = person;;
+                prevDeletedPerson = person;
             }
             catch (Exception ex)
             {
@@ -227,106 +246,6 @@ public class MainActivity extends ActionBarActivity
       }
     }
   };
-
-
-  /**
-   * This method animates all other views in the ListView container (not including ignoreView)
-   * into their final positions. It is called after ignoreView has been removed from the
-   * adapter, but before layout has been run. The approach here is to figure out where
-   * everything is now, then allow layout to run, then figure out where everything is after
-   * layout, and then to run animations between all of those start/end positions.
-   */
-  private void animateRemoval(final ListView listview, final View viewToRemove)
-  {
-    int firstVisiblePosition = listview.getFirstVisiblePosition();
-
-    for (int i = 0; i < listview.getChildCount(); ++i)
-    {
-      View child = listview.getChildAt(i);
-
-      if (child != viewToRemove)
-      {
-        int position = firstVisiblePosition + i;
-        long itemId = this.adapterPerson.getItemId(position);
-        listItemTopPosMap.put(itemId, child.getTop());
-      }
-    }
-    // Delete the item from the adapter
-    int position = listview.getPositionForView(viewToRemove);
-    this.adapterPerson.remove(this.adapterPerson.getItem(position));
-
-    final ViewTreeObserver observer = listview.getViewTreeObserver();
-    observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
-    {
-      public boolean onPreDraw()
-      {
-        observer.removeOnPreDrawListener(this);
-        boolean firstAnimation = true;
-        int firstVisiblePosition = listview.getFirstVisiblePosition();
-
-        for (int i = 0; i < listview.getChildCount(); ++i)
-        {
-          final View child = listview.getChildAt(i);
-          int position = firstVisiblePosition + i;
-          long itemId = adapterPerson.getItemId(position);
-          Integer startTop = listItemTopPosMap.get(itemId);
-          int top = child.getTop();
-
-          if (startTop != null)
-          {
-            if (startTop != top)
-            {
-              int delta = startTop - top;
-              child.setTranslationY(delta);
-              child.animate().setDuration(MOVE_DURATION).translationY(0);
-
-              if (firstAnimation)
-              {
-                child.animate().withEndAction(new Runnable()
-                {
-                  public void run()
-                  {
-                    //mBackgroundContainer.hideBackground();
-                    listview.setEnabled(true);
-                  }
-                });
-
-                firstAnimation = false;
-              }
-            }
-          }
-          else
-          {
-            // Animate new views along with the others. The catch is that they did not
-            // exist in the start state, so we must calculate their starting position
-            // based on neighboring views.
-            int childHeight = child.getHeight() + listview.getDividerHeight();
-            startTop = top + (i > 0 ? childHeight : -childHeight);
-            int delta = startTop - top;
-            child.setTranslationY(delta);
-            child.animate().setDuration(MOVE_DURATION).translationY(0);
-
-            if (firstAnimation)
-            {
-              child.animate().withEndAction(new Runnable()
-              {
-                public void run()
-                {
-                  //mBackgroundContainer.hideBackground();
-                  listview.setEnabled(true);
-                }
-              });
-
-              firstAnimation = false;
-            }
-          }
-        }
-
-        listItemTopPosMap.clear();
-        return true;
-      }
-    });
-  }
 
 
   public boolean dispatchTouchEvent(MotionEvent ev)
@@ -369,5 +288,11 @@ public class MainActivity extends ActionBarActivity
     }
 
     return super.onOptionsItemSelected(item);
+  }
+
+
+  interface IListItemControls
+  {
+    void onUndoClicked(View v);
   }
 }
