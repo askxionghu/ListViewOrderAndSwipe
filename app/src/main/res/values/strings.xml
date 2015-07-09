@@ -1,7 +1,4 @@
 <resources>
-    <string name="app_name">ListViewDragOrder</string>
-
-    <string name="hello_world">Hello world!</string>
+    <string name="app_name">Listview Reorder and Swipe Demo</string>
     <string name="action_settings">Settings</string>
-    <string name="title_activity_select_app">SelectApp</string>
 </resources>

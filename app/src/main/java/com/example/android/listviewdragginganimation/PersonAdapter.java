@@ -1,36 +1,46 @@
+/**
+ * This code is partially based upon code written by Chet Haase at Google.
+ * Chet's video can be viewd at:
+ *
+ * https://www.youtube.com/watch?v=YCHNAi9kJI4
+ *
+ * More specifically, the animateRemoval method was incorporated into this module
+ * with slight modifications that include a bugfix that was in Chet's original code.
+ * See the animateRemoval method for details on the bug.
+ *
+ * The primary difference between this code and Chet's is that the swiping of a list
+ * item doesn't automatically delete the item. Instead, each list item consists
+ * of both a top and bottom view. When the top view is swiped out of view, the bottom
+ * view is revealed which contains a label on the far left that reads "Deleted" and
+ * a button on the far right that is labeled "Undo". Pressing the Undo button undeletes
+ * the item and swipes the top view back into place. This is the same functionality
+ * as seen in the Gmail app when deleting email items.
+ */
+
 package com.example.android.listviewdragginganimation;
 
-import android.animation.ObjectAnimator;
-import android.animation.PropertyValuesHolder;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.view.animation.Animation;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.Transformation;
-import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
+/**
+ * The adapter used by a listview (PersonListViewOrder).
+ */
 public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalSwipe.IJBHorizontalSwipeAdapter
 {
-  private final String TAG = "PersonAdapter";
+  private final String TAG_LOG = "PersonAdapter";
   private final String TAG_TOP_VIEW = "TopView";
   private final String TAG_BOTTOM_VIEW = "BottomView";
 
@@ -43,7 +53,6 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
   private PersonListViewOrder listview;
   private JBHorizontalSwipe jbHorizontalSwipe;
   private View selectedView;
-  private Person personToRemove;
   private ListViewItemBackground listViewItemBackground;
   private MainActivity.IListItemControls iListItemControls;
 
@@ -61,16 +70,14 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     this.listview = listview;
     this.listViewItemBackground = (ListViewItemBackground) listview.getParent();
 
+    // Store an id for each list item. This ensures that items can be
+    // retrieved even when their visual location within the list changes.
     for (int i = 0; i < items.size(); ++i)
     {
       this.idMap.put(items.get(i).toString(), i);
     }
   }
 
-  public void setListView(PersonListViewOrder listview)
-  {
-    this.listview = listview;
-  }
 
   @Override
   public View getView(int position, View convertView, ViewGroup parent)
@@ -86,6 +93,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
         v = vi.inflate(R.layout.person_item, null);
       }
 
+      // Each item needs to store a reference to the JBHorizontalSwipe object to manage being swiped by the user.
       CustomListItem customListItem = (CustomListItem) v;
       customListItem.setJBHeaderRef(this.jbHorizontalSwipe);
 
@@ -102,6 +110,11 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
 
       vTop.setOnTouchListener(onTouchListenerTopView);
 
+      // Unlike typical listviews that contain a single view for each item,
+      // this listview contains items where each item can have a top and a bottom
+      // view, so the state of the top/bottom needs to be set as each view
+      // gets recycled.
+
       if (person.deleted)
       {
         vTop.setX(vTop.getWidth());
@@ -113,6 +126,9 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
         vBottom.setAlpha(0);
       }
 
+      // Setup a handler to handle the user tapping on the Undo button. The Undo
+      // button might get selected while swiping the top view, so set its Pressed
+      // state to false to prevent it from being selected when it gets displayed.
       ButtonBottomView btnUndo = (ButtonBottomView) v.findViewById(R.id.btnUndo);
       btnUndo.setPressed(false);
       onItemSwiped(person, btnUndo);
@@ -121,12 +137,18 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     }
     catch (Exception ex)
     {
-      Log.e(TAG, "getView: " + ex.getMessage());
+      Log.e(TAG_LOG, "getView: " + ex.getMessage());
       return convertView;
     }
   }
 
 
+  /**
+   * Enables or disables the handling of Undo button when the top or bottom view is visible.
+   *
+   * @param person The Person associated with the swiped item.
+   * @param btnUndo The view representing the Undo button.
+   */
   public void onItemSwiped(Person person, ButtonBottomView btnUndo)
   {
     try
@@ -138,17 +160,22 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       }
       else
       {
+        // When the item is not deleted, it is important to prevent motion events from reaching
+        // the Undo button and causing an Undo event to occur.
         btnUndo.setIgnoreMotionEvents(true);
         btnUndo.setOnClickListener(null);
       }
     }
     catch (Exception ex)
     {
-      Log.e(TAG, "onItemSwiped: " + ex.getMessage());
+      Log.e(TAG_LOG, "onItemSwiped: " + ex.getMessage());
     }
   }
 
 
+  /**
+   * Event handler to handle a user tapping on the Undo button.
+   */
   private View.OnClickListener onUndoClickListener = new View.OnClickListener()
   {
     @Override
@@ -168,12 +195,18 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       }
       catch (Exception ex)
       {
-        Log.e(TAG, "onUndoClickListener.onClick: " + ex.getMessage());
+        Log.e(TAG_LOG, "onUndoClickListener.onClick: " + ex.getMessage());
       }
     }
   };
 
 
+  /**
+   * Returns the root view given a view (control) on the bottom view.
+   *
+   * @param v A control on the bottom view.
+   * @return The root view of the item is returned.
+   */
   private View getItemRootViewFromBottomControl(View v)
   {
     return (View) v.getParent().getParent().getParent();
@@ -189,50 +222,89 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
    */
   public void animateRemoval(final View viewToRemove)
   {
-    int position = listview.getPositionForView(viewToRemove);
-
-    if (position == listview.getLastVisiblePosition())
-      listViewItemBackground.hideBackground();
-    else
-      listViewItemBackground.showBackground(viewToRemove);
-
-    int firstVisiblePosition = listview.getFirstVisiblePosition();
-
-    for (int i = 0; i < listview.getChildCount(); ++i)
+    try
     {
-      View child = listview.getChildAt(i);
+      int position = listview.getPositionForView(viewToRemove);
 
-      if (child != viewToRemove)
+      // The following line is a bugfix from Google's original code.
+      // If the listview doesn't have enough items to fil the height
+      // of the listview and the last item is deleted, the bottom view
+      // will remain visible as a snapshot. The hideBackground removes
+      // this.
+
+      if (position == listview.getLastVisiblePosition())
+        listViewItemBackground.hideBackground();
+      else
+        listViewItemBackground.showBackground(viewToRemove);
+
+      int firstVisiblePosition = listview.getFirstVisiblePosition();
+
+      for (int i = 0; i < listview.getChildCount(); ++i)
       {
-        int pos = firstVisiblePosition + i;
-        long itemId = getItemId(pos);
-        listItemTopPosMap.put(itemId, child.getTop());
-      }
-    }
-    // Delete the item from the adapter
-    remove(getItem(position));
+        View child = listview.getChildAt(i);
 
-    final ViewTreeObserver observer = listview.getViewTreeObserver();
-    observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
-    {
-      public boolean onPreDraw()
-      {
-        observer.removeOnPreDrawListener(this);
-        boolean firstAnimation = true;
-        int firstVisiblePosition = listview.getFirstVisiblePosition();
-
-        for (int i = 0; i < listview.getChildCount(); ++i)
+        if (child != viewToRemove)
         {
-          final View child = listview.getChildAt(i);
-          int position = firstVisiblePosition + i;
-          long itemId = getItemId(position);
-          Integer startTop = listItemTopPosMap.get(itemId);
-          int top = child.getTop();
+          int pos = firstVisiblePosition + i;
+          long itemId = getItemId(pos);
+          listItemTopPosMap.put(itemId, child.getTop());
+        }
+      }
 
-          if (startTop != null)
+      // Delete the item from the adapter. NOTE: calling "remove" forces the listview
+      // to update its UI after animateRemoval returns. This means that all the
+      // items in the code below that get animated will be working on a set of items
+      // that is one less than total amount that was available prior to calling remove.
+      remove(getItem(position));
+
+      final ViewTreeObserver observer = listview.getViewTreeObserver();
+      observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
+      {
+        public boolean onPreDraw()
+        {
+          observer.removeOnPreDrawListener(this);
+          boolean firstAnimation = true;
+          int firstVisiblePosition = listview.getFirstVisiblePosition();
+
+          for (int i = 0; i < listview.getChildCount(); ++i)
           {
-            if (startTop != top)
+            final View child = listview.getChildAt(i);
+            child.setPressed(false);
+            int position = firstVisiblePosition + i;
+            long itemId = getItemId(position);
+            Integer startTop = listItemTopPosMap.get(itemId);
+            int top = child.getTop();
+
+            if (startTop != null)
             {
+              if (startTop != top)
+              {
+                int delta = startTop - top;
+                child.setTranslationY(delta);
+                child.animate().setDuration(MOVE_DURATION).translationY(0);
+
+                if (firstAnimation)
+                {
+                  child.animate().withEndAction(new Runnable()
+                  {
+                    public void run()
+                    {
+                      listViewItemBackground.hideBackground();
+                      listview.setEnabled(true);
+                    }
+                  });
+
+                  firstAnimation = false;
+                }
+              }
+            }
+            else
+            {
+              // Animate new views along with the others. The catch is that they did not
+              // exist in the start state, so we must calculate their starting position
+              // based on neighboring views.
+              int childHeight = child.getHeight() + listview.getDividerHeight();
+              startTop = top + (i > 0 ? childHeight : -childHeight);
               int delta = startTop - top;
               child.setTranslationY(delta);
               child.animate().setDuration(MOVE_DURATION).translationY(0);
@@ -252,137 +324,23 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
               }
             }
           }
-          else
-          {
-            // Animate new views along with the others. The catch is that they did not
-            // exist in the start state, so we must calculate their starting position
-            // based on neighboring views.
-            int childHeight = child.getHeight() + listview.getDividerHeight();
-            startTop = top + (i > 0 ? childHeight : -childHeight);
-            int delta = startTop - top;
-            child.setTranslationY(delta);
-            child.animate().setDuration(MOVE_DURATION).translationY(0);
 
-            if (firstAnimation)
-            {
-              child.animate().withEndAction(new Runnable()
-              {
-                public void run()
-                {
-                  listViewItemBackground.hideBackground();
-                  listview.setEnabled(true);
-                }
-              });
-
-              firstAnimation = false;
-            }
-          }
+          listview.setPressed(false);
+          listItemTopPosMap.clear();
+          return true;
         }
-
-        listview.setPressed(false);
-        listItemTopPosMap.clear();
-        return true;
-      }
-    });
+      });
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "animateRemoval: " + ex.getMessage());
+    }
   }
 
 
-  /*public void expand(final View v)
-  {
-    v.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-    final int targetHeight = v.getMeasuredHeight();
-
-    v.getLayoutParams().height = 0;
-    v.setVisibility(View.VISIBLE);
-
-    Animation a = new Animation()
-    {
-      @Override
-      protected void applyTransformation(float interpolatedTime, Transformation t)
-      {
-        v.getLayoutParams().height = interpolatedTime == 1 ? ViewGroup.LayoutParams.WRAP_CONTENT : (int) (targetHeight * interpolatedTime);
-        v.requestLayout();
-      }
-
-      @Override
-      public boolean willChangeBounds()
-      {
-        return true;
-      }
-    };
-
-    // 1dp/ms
-    a.setDuration((int) (targetHeight / v.getContext().getResources().getDisplayMetrics().density));
-    v.startAnimation(a);
-  }
-
-  public void collapse(final View v)
-  {
-    final int initialHeight = v.getMeasuredHeight();
-
-    Animation a = new Animation()
-    {
-      @Override
-      protected void applyTransformation(float interpolatedTime, Transformation t)
-      {
-        if (interpolatedTime == 1)
-        {
-          v.setVisibility(View.GONE);
-          items.remove(personToRemove);
-          notifyDataSetChanged();
-        }
-        else
-        {
-          v.getLayoutParams().height = initialHeight - (int) (initialHeight * interpolatedTime);
-          v.requestLayout();
-        }
-      }
-
-      @Override
-      public boolean willChangeBounds()
-      {
-        return true;
-      }
-    };
-
-    a.setAnimationListener(animListenerCollapsedRow);
-
-    // 1dp/ms
-    a.setDuration((int) (initialHeight / v.getContext().getResources().getDisplayMetrics().density));
-    v.startAnimation(a);
-  }*/
-
-
-  private Animation.AnimationListener animListenerCollapsedRow = new Animation.AnimationListener()
-  {
-    @Override
-    public void onAnimationEnd(Animation animation)
-    {
-      try
-      {
-//        items.remove(personToRemove);
-//        notifyDataSetChanged();
-      }
-      catch (Exception ex)
-      {
-        Log.e(TAG, "onAnimationEnd: " + ex.getMessage());
-      }
-    }
-
-    @Override
-    public void onAnimationRepeat(Animation animation)
-    {
-
-    }
-
-    @Override
-    public void onAnimationStart(Animation animation)
-    {
-
-    }
-  };
-
-
+  /**
+   * Handles touch events for a list item.
+   */
   private View.OnTouchListener onTouchListenerTopView = new View.OnTouchListener()
   {
     @Override
@@ -399,7 +357,7 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
       }
       catch (Exception ex)
       {
-        Log.e(TAG, "onCreate: " + ex.getMessage());
+        Log.e(TAG_LOG, "onTouchListenerTopView.onTouch: " + ex.getMessage());
       }
       return false;
     }
@@ -427,15 +385,6 @@ public class PersonAdapter extends ArrayAdapter<Person> implements JBHorizontalS
     }
 
     Person person = this.items.get(position);
-
-    long id = this.idMap.get(person.toString());
-
-    return id;
-  }
-
-
-  public long getItemIdByPerson(Person person)
-  {
     return this.idMap.get(person.toString());
   }
 

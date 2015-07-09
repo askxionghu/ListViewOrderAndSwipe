@@ -1,6 +1,28 @@
 /*
-TODO: Swipe a deleted item back into view from either left or right
-
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Johann Blake
+ *
+ * https://www.linkedin.com/in/johannblake
+ * https://plus.google.com/+JohannBlake
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.example.android.listviewdragginganimation;
@@ -10,7 +32,6 @@ import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.content.Context;
 import android.graphics.BitmapFactory;
-import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,25 +40,18 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.ListView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
-
-
 public class MainActivity extends ActionBarActivity
 {
-  private final String TAG = "MainActivity";
+  private final String TAG_LOG = "MainActivity";
   private final String TAG_BOTTOM_VIEW = "BottomView";
 
   private ArrayList<Person> persons = new ArrayList<>();
@@ -61,8 +75,10 @@ public class MainActivity extends ActionBarActivity
 
       this.context = this;
 
+      // The main activity needs a JBHorizontalSwipe object to handle swiping listview items.
       this.jbHorizontalSwipe = new JBHorizontalSwipe(ijbHorizontalSwipe);
 
+      // Add some data to the listview.
       this.persons.add(new Person(getNewId(), "Ben", BitmapFactory.decodeResource(getResources(), R.drawable.ic_ben)));
       this.persons.add(new Person(getNewId(), "Brad", BitmapFactory.decodeResource(getResources(), R.drawable.ic_brad)));
       this.persons.add(new Person(getNewId(), "Bradley", BitmapFactory.decodeResource(getResources(), R.drawable.ic_bradley)));
@@ -82,7 +98,6 @@ public class MainActivity extends ActionBarActivity
       this.persons.add(new Person(getNewId(), "Tom", BitmapFactory.decodeResource(getResources(), R.drawable.ic_tom)));
       this.persons.add(new Person(getNewId(), "Will", BitmapFactory.decodeResource(getResources(), R.drawable.ic_will)));
 
-
       this.lvPersons = (PersonListViewOrder) findViewById(R.id.lvPersons);
       this.lvPersons.setPersonList(this.persons);
       this.adapterPerson = new PersonAdapter(this, R.layout.person_item, persons, this.jbHorizontalSwipe, this.lvPersons, new IListItemControls()
@@ -90,12 +105,12 @@ public class MainActivity extends ActionBarActivity
         @Override
         public void onUndoClicked(View v)
         {
+          // When the Undo button on a list item is pressed, we need to reset the state of deletion.
           removePrevDeleted = false;
           prevDeletedPerson = null;
         }
       });
 
-      this.adapterPerson.setListView(this.lvPersons);
       this.lvPersons.setAdapter(this.adapterPerson);
 
       this.lvPersons.setOnItemClickListener(new AdapterView.OnItemClickListener()
@@ -105,16 +120,23 @@ public class MainActivity extends ActionBarActivity
         {
           try
           {
+            // This is where you put your code to handle the user tapping on a list item, i.e.
+            // when the item's top view is being displayed.
             Person person = (Person) view.getTag();
             Toast.makeText(context, person.name, Toast.LENGTH_SHORT).show();
           }
           catch (Exception ex)
           {
-            Log.e(TAG, "onItemClick: " + ex.getMessage());
+            Log.e(TAG_LOG, "onItemClick: " + ex.getMessage());
           }
         }
       });
 
+      // Handles removing a deleted item if the user scrolls the listview.
+      // NOTE: Don't use a ScrollListener on the listview as this will cause bad
+      // side effects. Motion events for the listview must be handled by the
+      // onTouchEvent method in PersonListViewOrder in order for this kind of listview
+      // to function properly.
       this.lvPersons.setVerticalScrollCallback(new PersonListViewOrder.IVerticalScrollCallback()
       {
         @Override
@@ -122,9 +144,10 @@ public class MainActivity extends ActionBarActivity
         {
           try
           {
+            // This method gets called when the user scrolls the listview vertically.
             if (prevDeletedPerson != null)
             {
-              int pos = (int) adapterPerson.getPosition(prevDeletedPerson);
+              int pos = adapterPerson.getPosition(prevDeletedPerson);
               View vPrevDeleted = lvPersons.getChildAt(pos - lvPersons.getFirstVisiblePosition());
               adapterPerson.animateRemoval(vPrevDeleted);
               removePrevDeleted = false;
@@ -133,24 +156,27 @@ public class MainActivity extends ActionBarActivity
           }
           catch (Exception ex)
           {
-            Log.e(TAG, "onVerticalScroll: " + ex.getMessage());
+            Log.e(TAG_LOG, "onVerticalScroll: " + ex.getMessage());
           }
         }
       });
     }
     catch (Exception ex)
     {
-      Log.e(TAG, "onCreate: " + ex.getMessage());
+      Log.e(TAG_LOG, "onCreate: " + ex.getMessage());
     }
   }
 
 
+  /**
+   * Used to handle callbacks when the user swipes list items.
+   */
   private JBHorizontalSwipe.IJBHorizontalSwipe ijbHorizontalSwipe = new JBHorizontalSwipe.IJBHorizontalSwipe()
   {
     @Override
     public void onReposition(float x, boolean scrollingRight, float scrollDelta)
     {
-
+      // Currently not used. You can use this callback to do something while the user is swiping a list item.
     }
 
     @Override
@@ -158,10 +184,23 @@ public class MainActivity extends ActionBarActivity
     {
       try
       {
+        // This callback gets called when the list item's top view changes from fully visible to
+        // fully invisible.
+
         vgSwiped = (ViewGroup) vTop.getParent();
         final Person person = (Person) vgSwiped.getTag();
         person.deleted = !visible;
         removePrevDeleted = false;
+
+        // Using setPressed is necessary in various places throughout the app in order
+        // to restore the background color of the top view. This is required because list
+        // items don't receive the ACTION_UP event which would normally restore the background
+        // color. The ACTION_UP is not received because code in PersonListViewOrder as well
+        // JBHorizontalSwipe and CustomListItem intercept the motion events and take over
+        // control when a ACTION_DOWN is received.
+
+        vTop.setPressed(false);
+        lvPersons.setPressed(false);
 
         if ((person == prevDeletedPerson) && !person.deleted)
           prevDeletedPerson = null;
@@ -174,6 +213,9 @@ public class MainActivity extends ActionBarActivity
 
         ButtonBottomView btnUndo = (ButtonBottomView) vBottom.findViewById(R.id.btnUndo);
         adapterPerson.onItemSwiped(person, btnUndo);
+
+        // If the top view is swiped out of view, we want to animate the bottom view's
+        // visibility to gradually show, which is done by changing its alpha.
 
         if (person.deleted)
           pvhAlphaCurrent = PropertyValuesHolder.ofFloat("alpha", 0, 1);
@@ -197,9 +239,12 @@ public class MainActivity extends ActionBarActivity
           {
             try
             {
+              // If a previous item has been deleted but is still visible, we
+              // need to remove it from the list using some animation.
+
               if (removePrevDeleted)
               {
-                int pos = (int) adapterPerson.getPosition(prevDeletedPerson);
+                int pos = adapterPerson.getPosition(prevDeletedPerson);
 
                 if ((pos >= lvPersons.getFirstVisiblePosition()) && (pos <= lvPersons.getLastVisiblePosition()))
                 {
@@ -217,7 +262,7 @@ public class MainActivity extends ActionBarActivity
             }
             catch (Exception ex)
             {
-              Log.e(TAG, "onTopViewVisibilityChange.onAnimationEnd: " + ex.getMessage());
+              Log.e(TAG_LOG, "onTopViewVisibilityChange.onAnimationEnd: " + ex.getMessage());
             }
           }
 
@@ -238,26 +283,40 @@ public class MainActivity extends ActionBarActivity
       }
       catch (Exception ex)
       {
-        Log.e(TAG, "onTopViewVisibilityChange: " + ex.getMessage());
+        Log.e(TAG_LOG, "onTopViewVisibilityChange: " + ex.getMessage());
       }
     }
   };
 
 
+  /**
+   * Used to intercept touch events.
+   */
   public boolean dispatchTouchEvent(MotionEvent ev)
   {
-    if (this.jbHorizontalSwipe != null)
-      this.jbHorizontalSwipe.onRootDispatchTouchEventListener(ev);
+    try
+    {
+      if (this.jbHorizontalSwipe != null)
+        this.jbHorizontalSwipe.onRootDispatchTouchEventListener(ev);
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "dispatchTouchEvent: " + ex.getMessage());
+    }
 
     return super.dispatchTouchEvent(ev);
   }
 
 
+  /**
+   * Generates a unique ID.
+   *
+   * @return Returns a random number.
+   */
   private long getNewId()
   {
     Random r = new Random();
-    long id = r.nextLong();
-    return id;
+    return r.nextLong();
   }
 
 
@@ -289,6 +348,11 @@ public class MainActivity extends ActionBarActivity
 
   interface IListItemControls
   {
+    /**
+     * A callback that gets called when the user taps on the Undo button.
+     *
+     * @param v The view that represents the Undo button.
+     */
     void onUndoClicked(View v);
   }
 }

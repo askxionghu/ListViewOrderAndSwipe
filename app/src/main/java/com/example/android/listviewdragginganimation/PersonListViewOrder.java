@@ -1,17 +1,18 @@
-/*
- * Copyright (C) 2013 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/**
+ * A listview that lets users reorder items. Reordering is done by pressing on a "button" on the
+ * list item and dragging the item to the new location. This code is based on the code written
+ * by Daniel Olshansky at Google. His video can be viewed at:
+ * <p/>
+ * https://www.youtube.com/watch?v=_BZIvjMgH-Q
+ * <p/>
+ * The major difference between Daniel's code and this module is that the user can
+ * reorder list items by pressing down on a button and dragging the item to the new
+ * location. Daniel's solution requires the user to perform a long press on an item
+ * to initiate the move. This is not intuitive. The Google News app uses the approach
+ * employed in this module.
+ * <p/>
+ * In order to accomplish moving by pressing on a "button", the view that is acting
+ * as the move button needs to have its tag propery set to "DragIcon".
  */
 
 package com.example.android.listviewdragginganimation;
@@ -24,11 +25,9 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
-import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -37,45 +36,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 
 import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 
 import java.util.ArrayList;
 
-/**
- * The dynamic listview is an extension of listview that supports cell dragging
- * and swapping.
- * <p/>
- * This layout is in charge of positioning the hover cell in the correct location
- * on the screen in response to user touch events. It uses the position of the
- * hover cell to determine when two cells should be swapped. If two cells should
- * be swapped, all the corresponding data set and layout changes are handled here.
- * <p/>
- * If no cell is selected, all the touch events are passed down to the listview
- * and behave normally. If one of the items in the listview experiences a
- * long press event, the contents of its current visible state are captured as
- * a bitmap and its visibility is set to INVISIBLE. A hover cell is then created and
- * added to this layout as an overlaying BitmapDrawable above the listview. Once the
- * hover cell is translated some distance to signify an item swap, a data set change
- * accompanied by animation takes place. When the user releases the hover cell,
- * it animates into its corresponding position in the listview.
- * <p/>
- * When the hover cell is either above or below the bounds of the listview, this
- * listview also scrolls on its own so as to reveal additional content.
- */
 public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.IJBHorizontalSwipeTouch
 {
+  private final String TAG_LOG = "PersonListVewOrder";
+  private final String TAG_DRAG_ICON = "DragIcon";
 
   private final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 15;
   private final int MOVE_DURATION = 150;
   private final int LINE_THICKNESS = 1;
-
-  private final String TAG = "PersonListVewOrder";
-  private final String TAG_DRAG_ICON = "DragIcon";
 
   public ArrayList<Person> persons;
 
@@ -129,10 +104,17 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
 
   public void init(Context context)
   {
-    this.context = context;
-    setOnScrollListener(mScrollListener);
-    DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-    mSmoothScrollAmountAtEdge = (int) (SMOOTH_SCROLL_AMOUNT_AT_EDGE / metrics.density);
+    try
+    {
+      this.context = context;
+      setOnScrollListener(mScrollListener);
+      DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+      mSmoothScrollAmountAtEdge = (int) (SMOOTH_SCROLL_AMOUNT_AT_EDGE / metrics.density);
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "init: " + ex.getMessage());
+    }
   }
 
 
@@ -143,22 +125,29 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private BitmapDrawable getAndAddHoverView(View v)
   {
+    try
+    {
+      int w = v.getWidth();
+      int h = v.getHeight();
+      int top = v.getTop();
+      int left = v.getLeft();
 
-    int w = v.getWidth();
-    int h = v.getHeight();
-    int top = v.getTop();
-    int left = v.getLeft();
+      Bitmap b = getBitmapWithBorder(v);
 
-    Bitmap b = getBitmapWithBorder(v);
+      BitmapDrawable drawable = new BitmapDrawable(getResources(), b);
 
-    BitmapDrawable drawable = new BitmapDrawable(getResources(), b);
+      mHoverCellOriginalBounds = new Rect(left, top, left + w, top + h);
+      mHoverCellCurrentBounds = new Rect(mHoverCellOriginalBounds);
 
-    mHoverCellOriginalBounds = new Rect(left, top, left + w, top + h);
-    mHoverCellCurrentBounds = new Rect(mHoverCellOriginalBounds);
+      drawable.setBounds(mHoverCellCurrentBounds);
 
-    drawable.setBounds(mHoverCellCurrentBounds);
-
-    return drawable;
+      return drawable;
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "getAndAddHoverView: " + ex.getMessage());
+      return null;
+    }
   }
 
   /**
@@ -166,20 +155,28 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private Bitmap getBitmapWithBorder(View v)
   {
-    Bitmap bitmap = getBitmapFromView(v);
-    Canvas can = new Canvas(bitmap);
+    try
+    {
+      Bitmap bitmap = getBitmapFromView(v);
+      Canvas can = new Canvas(bitmap);
 
-    Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+      Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
 
-    Paint paint = new Paint();
-    paint.setStyle(Paint.Style.STROKE);
-    paint.setStrokeWidth(LINE_THICKNESS);
-    paint.setColor(getResources().getColor(R.color.grey_600));
+      Paint paint = new Paint();
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(LINE_THICKNESS);
+      paint.setColor(getResources().getColor(R.color.grey_600));
 
-    can.drawBitmap(bitmap, 0, 0, null);
-    can.drawRect(rect, paint);
+      can.drawBitmap(bitmap, 0, 0, null);
+      can.drawRect(rect, paint);
 
-    return bitmap;
+      return bitmap;
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "getBitmapWithBorder: " + ex.getMessage());
+      return null;
+    }
   }
 
   /**
@@ -187,10 +184,18 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private Bitmap getBitmapFromView(View v)
   {
-    Bitmap bitmap = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
-    Canvas canvas = new Canvas(bitmap);
-    v.draw(canvas);
-    return bitmap;
+    try
+    {
+      Bitmap bitmap = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
+      Canvas canvas = new Canvas(bitmap);
+      v.draw(canvas);
+      return bitmap;
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "getBitmapFromView: " + ex.getMessage());
+      return null;
+    }
   }
 
   /**
@@ -201,10 +206,17 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private void updateNeighborViewsForID(long itemID)
   {
-    int position = getPositionForID(itemID);
-    PersonAdapter adapter = ((PersonAdapter) getAdapter());
-    mAboveItemId = adapter.getItemId(position - 1);
-    mBelowItemId = adapter.getItemId(position + 1);
+    try
+    {
+      int position = getPositionForID(itemID);
+      PersonAdapter adapter = ((PersonAdapter) getAdapter());
+      mAboveItemId = adapter.getItemId(position - 1);
+      mBelowItemId = adapter.getItemId(position + 1);
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "updateNeighborViewsForID: " + ex.getMessage());
+    }
   }
 
   /**
@@ -212,20 +224,30 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   public View getViewForID(long itemID)
   {
-    int firstVisiblePosition = getFirstVisiblePosition();
-    PersonAdapter adapter = ((PersonAdapter) getAdapter());
-
-    for (int i = 0; i < getChildCount(); i++)
+    try
     {
-      View v = getChildAt(i);
-      int position = firstVisiblePosition + i;
-      long id = adapter.getItemId(position);
-      if (id == itemID)
+      int firstVisiblePosition = getFirstVisiblePosition();
+      PersonAdapter adapter = ((PersonAdapter) getAdapter());
+
+      for (int i = 0; i < getChildCount(); i++)
       {
-        return v;
+        View v = getChildAt(i);
+        int position = firstVisiblePosition + i;
+        long id = adapter.getItemId(position);
+
+        if (id == itemID)
+        {
+          return v;
+        }
       }
+
+      return null;
     }
-    return null;
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "getViewForID: " + ex.getMessage());
+      return null;
+    }
   }
 
   /**
@@ -233,14 +255,22 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   public int getPositionForID(long itemID)
   {
-    View v = getViewForID(itemID);
-    if (v == null)
+    try
     {
-      return -1;
+      View v = getViewForID(itemID);
+      if (v == null)
+      {
+        return -1;
+      }
+      else
+      {
+        return getPositionForView(v);
+      }
     }
-    else
+    catch (Exception ex)
     {
-      return getPositionForView(v);
+      Log.e(TAG_LOG, "getPositionForID: " + ex.getMessage());
+      return 0;
     }
   }
 
@@ -252,10 +282,16 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
   @Override
   protected void dispatchDraw(Canvas canvas)
   {
-    super.dispatchDraw(canvas);
-    if (mHoverCell != null)
+    try
     {
-      mHoverCell.draw(canvas);
+      super.dispatchDraw(canvas);
+
+      if (mHoverCell != null)
+        mHoverCell.draw(canvas);
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "dispatchDraw: " + ex.getMessage());
     }
   }
 
@@ -270,34 +306,42 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private View findViewAtPositionWithTag(View v, int x, int y, String tag)
   {
-    View vXY = null;
-
-    if (v instanceof ViewGroup)
+    try
     {
-      ViewGroup viewGroup = (ViewGroup) v;
+      View vXY = null;
 
-      for (int i = 0; i < viewGroup.getChildCount(); i++)
+      if (v instanceof ViewGroup)
       {
-        View c = viewGroup.getChildAt(i);
+        ViewGroup viewGroup = (ViewGroup) v;
 
-        int loc[] = new int[2];
-        c.getLocationOnScreen(loc);
-
-        if ((x >= loc[0] && (x <= (loc[0] + c.getWidth()))) && (y >= loc[1] && (y <= (loc[1] + c.getHeight()))))
+        for (int i = 0; i < viewGroup.getChildCount(); i++)
         {
-          vXY = c;
-          View viewAtPosition = findViewAtPositionWithTag(c, x, y, tag);
+          View c = viewGroup.getChildAt(i);
 
-          if ((viewAtPosition != null) && (viewAtPosition.getTag() != null) && viewAtPosition.getTag().equals(tag))
+          int loc[] = new int[2];
+          c.getLocationOnScreen(loc);
+
+          if ((x >= loc[0] && (x <= (loc[0] + c.getWidth()))) && (y >= loc[1] && (y <= (loc[1] + c.getHeight()))))
           {
-            vXY = viewAtPosition;
-            break;
+            vXY = c;
+            View viewAtPosition = findViewAtPositionWithTag(c, x, y, tag);
+
+            if ((viewAtPosition != null) && (viewAtPosition.getTag() != null) && viewAtPosition.getTag().equals(tag))
+            {
+              vXY = viewAtPosition;
+              break;
+            }
           }
         }
       }
-    }
 
-    return vXY;
+      return vXY;
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "findViewAtPositionWithTag: " + ex.getMessage());
+      return null;
+    }
   }
 
 
@@ -341,11 +385,10 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
           }
 
           break;
+
         case MotionEvent.ACTION_MOVE:
           if (mActivePointerId == INVALID_POINTER_ID)
-          {
             break;
-          }
 
           int pointerIndex = event.findPointerIndex(mActivePointerId);
 
@@ -366,20 +409,18 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
             return false;
           }
           else if ((Math.abs(deltaY) > 0) && (iVerticalScrollCallback != null))
-          {
             iVerticalScrollCallback.onVerticalScroll();
-          }
 
           break;
-        case MotionEvent.ACTION_UP:
 
+        case MotionEvent.ACTION_UP:
           touchEventsEnded();
 
           if (this.disableScrolling)
           {
             // Enable the adapter to process touch events for list items.
             PersonAdapter personAdapter = (PersonAdapter) getAdapter();
-            JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = (JBHorizontalSwipe.IJBHorizontalSwipeAdapter) personAdapter;
+            JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = personAdapter;
 
             this.disableScrolling = false;
 
@@ -398,9 +439,11 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
           this.disableScrolling = false;
 
           break;
+
         case MotionEvent.ACTION_CANCEL:
           touchEventsCancelled();
           break;
+
         case MotionEvent.ACTION_POINTER_UP:
 
           /**If a multitouch event took place and the original touch dictating
@@ -408,27 +451,30 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
            * ends and the hover cell is animated to its corresponding position
            * in the listview.
            */
-          pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >>
-              MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+          pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
           final int pointerId = event.getPointerId(pointerIndex);
+
           if (pointerId == mActivePointerId)
-          {
             touchEventsEnded();
-          }
+
           break;
+
         default:
           break;
       }
     }
     catch (Exception ex)
     {
-      Log.e(TAG, "onTouchEvent: " + ex.getMessage());
+      Log.e(TAG_LOG, "onTouchEvent: " + ex.getMessage());
     }
 
     return super.onTouchEvent(event);
   }
 
 
+  /**
+   * Stores a reference to the callback that will be used to inform the calling client when the listview is scrolled vertically.
+   */
   public void setVerticalScrollCallback(IVerticalScrollCallback iVerticalScrollCallback)
   {
     this.iVerticalScrollCallback = iVerticalScrollCallback;
@@ -463,76 +509,88 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private void handleCellSwitch()
   {
-    final int deltaY = mLastEventY - mDownY;
-    int deltaYTotal = mHoverCellOriginalBounds.top + mTotalOffset + deltaY;
-
-    View belowView = getViewForID(mBelowItemId);
-    View mobileView = getViewForID(mMobileItemId);
-    View aboveView = getViewForID(mAboveItemId);
-
-    boolean isBelow = (belowView != null) && (deltaYTotal > belowView.getTop());
-    boolean isAbove = (aboveView != null) && (deltaYTotal < aboveView.getTop());
-
-    if (isBelow || isAbove)
+    try
     {
+      final int deltaY = mLastEventY - mDownY;
+      int deltaYTotal = mHoverCellOriginalBounds.top + mTotalOffset + deltaY;
 
-      final long switchItemID = isBelow ? mBelowItemId : mAboveItemId;
-      View switchView = isBelow ? belowView : aboveView;
-      final int originalItem = getPositionForView(mobileView);
+      View belowView = getViewForID(mBelowItemId);
+      View mobileView = getViewForID(mMobileItemId);
+      View aboveView = getViewForID(mAboveItemId);
 
-      if (switchView == null)
+      boolean isBelow = (belowView != null) && (deltaYTotal > belowView.getTop());
+      boolean isAbove = (aboveView != null) && (deltaYTotal < aboveView.getTop());
+
+      if (isBelow || isAbove)
       {
-        updateNeighborViewsForID(mMobileItemId);
-        return;
-      }
+        final long switchItemID = isBelow ? mBelowItemId : mAboveItemId;
+        View switchView = isBelow ? belowView : aboveView;
+        final int originalItem = getPositionForView(mobileView);
 
-      swapElements(persons, originalItem, getPositionForView(switchView));
-
-      ((BaseAdapter) getAdapter()).notifyDataSetChanged();
-
-      mDownY = mLastEventY;
-
-      final int switchViewStartTop = switchView.getTop();
-
-      if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.KITKAT)
-      {
-        mobileView.setVisibility(View.VISIBLE);
-        switchView.setVisibility(View.INVISIBLE);
-      }
-
-      updateNeighborViewsForID(mMobileItemId);
-
-      final ViewTreeObserver observer = getViewTreeObserver();
-      observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
-      {
-        public boolean onPreDraw()
+        if (switchView == null)
         {
-          observer.removeOnPreDrawListener(this);
-
-          View switchView = getViewForID(switchItemID);
-
-          mTotalOffset += deltaY;
-
-          int switchViewNewTop = switchView.getTop();
-          int delta = switchViewStartTop - switchViewNewTop;
-
-          switchView.setTranslationY(delta);
-
-          ObjectAnimator animator = ObjectAnimator.ofFloat(switchView, View.TRANSLATION_Y, 0);
-          animator.setDuration(MOVE_DURATION);
-          animator.start();
-
-          return true;
+          updateNeighborViewsForID(mMobileItemId);
+          return;
         }
-      });
+
+        swapElements(persons, originalItem, getPositionForView(switchView));
+        ((BaseAdapter) getAdapter()).notifyDataSetChanged();
+
+        mDownY = mLastEventY;
+
+        final int switchViewStartTop = switchView.getTop();
+
+        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.KITKAT)
+        {
+          mobileView.setVisibility(View.VISIBLE);
+          switchView.setVisibility(View.INVISIBLE);
+        }
+
+        updateNeighborViewsForID(mMobileItemId);
+
+        final ViewTreeObserver observer = getViewTreeObserver();
+        observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
+        {
+          public boolean onPreDraw()
+          {
+            observer.removeOnPreDrawListener(this);
+
+            View switchView = getViewForID(switchItemID);
+
+            mTotalOffset += deltaY;
+
+            int switchViewNewTop = switchView.getTop();
+            int delta = switchViewStartTop - switchViewNewTop;
+
+            switchView.setTranslationY(delta);
+
+            ObjectAnimator animator = ObjectAnimator.ofFloat(switchView, View.TRANSLATION_Y, 0);
+            animator.setDuration(MOVE_DURATION);
+            animator.start();
+
+            return true;
+          }
+        });
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "handleCellSwitch: " + ex.getMessage());
     }
   }
 
   private void swapElements(ArrayList arrayList, int indexOne, int indexTwo)
   {
-    Object temp = arrayList.get(indexOne);
-    arrayList.set(indexOne, arrayList.get(indexTwo));
-    arrayList.set(indexTwo, temp);
+    try
+    {
+      Object temp = arrayList.get(indexOne);
+      arrayList.set(indexOne, arrayList.get(indexTwo));
+      arrayList.set(indexTwo, temp);
+    }
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "swapElements: " + ex.getMessage());
+    }
   }
 
 
@@ -542,60 +600,69 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private void touchEventsEnded()
   {
-    final View mobileView = getViewForID(mMobileItemId);
-    if (mCellIsMobile || mIsWaitingForScrollFinish)
+    try
     {
-      mCellIsMobile = false;
-      mIsWaitingForScrollFinish = false;
-      mIsMobileScrolling = false;
-      mActivePointerId = INVALID_POINTER_ID;
+      final View mobileView = getViewForID(mMobileItemId);
 
-      // If the autoscroller has not completed scrolling, we need to wait for it to
-      // finish in order to determine the final location of where the hover cell
-      // should be animated to.
-      if (mScrollState != OnScrollListener.SCROLL_STATE_IDLE)
+      if (mCellIsMobile || mIsWaitingForScrollFinish)
       {
-        mIsWaitingForScrollFinish = true;
-        return;
+        mCellIsMobile = false;
+        mIsWaitingForScrollFinish = false;
+        mIsMobileScrolling = false;
+        mActivePointerId = INVALID_POINTER_ID;
+
+        // If the autoscroller has not completed scrolling, we need to wait for it to
+        // finish in order to determine the final location of where the hover cell
+        // should be animated to.
+        if (mScrollState != OnScrollListener.SCROLL_STATE_IDLE)
+        {
+          mIsWaitingForScrollFinish = true;
+          return;
+        }
+
+        mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left, mobileView.getTop());
+
+        ObjectAnimator hoverViewAnimator = ObjectAnimator.ofObject(mHoverCell, "bounds", sBoundEvaluator, mHoverCellCurrentBounds);
+        hoverViewAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener()
+        {
+          @Override
+          public void onAnimationUpdate(ValueAnimator valueAnimator)
+          {
+            invalidate();
+          }
+        });
+
+        hoverViewAnimator.addListener(new AnimatorListenerAdapter()
+        {
+          @Override
+          public void onAnimationStart(Animator animation)
+          {
+            setEnabled(false);
+          }
+
+          @Override
+          public void onAnimationEnd(Animator animation)
+          {
+            mAboveItemId = INVALID_ID;
+            mMobileItemId = INVALID_ID;
+            mBelowItemId = INVALID_ID;
+            mobileView.setVisibility(VISIBLE);
+            mHoverCell = null;
+            setEnabled(true);
+            invalidate();
+          }
+        });
+
+        hoverViewAnimator.start();
       }
-
-      mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left, mobileView.getTop());
-
-      ObjectAnimator hoverViewAnimator = ObjectAnimator.ofObject(mHoverCell, "bounds",
-          sBoundEvaluator, mHoverCellCurrentBounds);
-      hoverViewAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener()
+      else
       {
-        @Override
-        public void onAnimationUpdate(ValueAnimator valueAnimator)
-        {
-          invalidate();
-        }
-      });
-      hoverViewAnimator.addListener(new AnimatorListenerAdapter()
-      {
-        @Override
-        public void onAnimationStart(Animator animation)
-        {
-          setEnabled(false);
-        }
-
-        @Override
-        public void onAnimationEnd(Animator animation)
-        {
-          mAboveItemId = INVALID_ID;
-          mMobileItemId = INVALID_ID;
-          mBelowItemId = INVALID_ID;
-          mobileView.setVisibility(VISIBLE);
-          mHoverCell = null;
-          setEnabled(true);
-          invalidate();
-        }
-      });
-      hoverViewAnimator.start();
+        touchEventsCancelled();
+      }
     }
-    else
+    catch (Exception ex)
     {
-      touchEventsCancelled();
+      Log.e(TAG_LOG, "touchEventsEnded: " + ex.getMessage());
     }
   }
 
@@ -604,19 +671,28 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private void touchEventsCancelled()
   {
-    View mobileView = getViewForID(mMobileItemId);
-    if (mCellIsMobile)
+    try
     {
-      mAboveItemId = INVALID_ID;
-      mMobileItemId = INVALID_ID;
-      mBelowItemId = INVALID_ID;
-      mobileView.setVisibility(VISIBLE);
-      mHoverCell = null;
-      invalidate();
+      View mobileView = getViewForID(mMobileItemId);
+
+      if (mCellIsMobile)
+      {
+        mAboveItemId = INVALID_ID;
+        mMobileItemId = INVALID_ID;
+        mBelowItemId = INVALID_ID;
+        mobileView.setVisibility(VISIBLE);
+        mHoverCell = null;
+        invalidate();
+      }
+
+      mCellIsMobile = false;
+      mIsMobileScrolling = false;
+      mActivePointerId = INVALID_POINTER_ID;
     }
-    mCellIsMobile = false;
-    mIsMobileScrolling = false;
-    mActivePointerId = INVALID_POINTER_ID;
+    catch (Exception ex)
+    {
+      Log.e(TAG_LOG, "touchEventsCancelled: " + ex.getMessage());
+    }
   }
 
   /**
@@ -656,26 +732,34 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   public boolean handleMobileCellScroll(Rect r)
   {
-    int offset = computeVerticalScrollOffset();
-    int height = getHeight();
-    int extent = computeVerticalScrollExtent();
-    int range = computeVerticalScrollRange();
-    int hoverViewTop = r.top;
-    int hoverHeight = r.height();
-
-    if (hoverViewTop <= 0 && offset > 0)
+    try
     {
-      smoothScrollBy(-mSmoothScrollAmountAtEdge, 0);
-      return true;
-    }
+      int offset = computeVerticalScrollOffset();
+      int height = getHeight();
+      int extent = computeVerticalScrollExtent();
+      int range = computeVerticalScrollRange();
+      int hoverViewTop = r.top;
+      int hoverHeight = r.height();
 
-    if (hoverViewTop + hoverHeight >= height && (offset + extent) < range)
+      if (hoverViewTop <= 0 && offset > 0)
+      {
+        smoothScrollBy(-mSmoothScrollAmountAtEdge, 0);
+        return true;
+      }
+
+      if (hoverViewTop + hoverHeight >= height && (offset + extent) < range)
+      {
+        smoothScrollBy(mSmoothScrollAmountAtEdge, 0);
+        return true;
+      }
+
+      return false;
+    }
+    catch (Exception ex)
     {
-      smoothScrollBy(mSmoothScrollAmountAtEdge, 0);
-      return true;
+      Log.e(TAG_LOG, "handleMobileCellScroll: " + ex.getMessage());
+      return false;
     }
-
-    return false;
   }
 
   public void setPersonList(ArrayList<Person> persons)
@@ -692,37 +776,47 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
    */
   private OnScrollListener mScrollListener = new OnScrollListener()
   {
-
     private int mPreviousFirstVisibleItem = -1;
     private int mPreviousVisibleItemCount = -1;
     private int mCurrentFirstVisibleItem;
     private int mCurrentVisibleItemCount;
     private int mCurrentScrollState;
 
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
-                         int totalItemCount)
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)
     {
-      mCurrentFirstVisibleItem = firstVisibleItem;
-      mCurrentVisibleItemCount = visibleItemCount;
+      try
+      {
+        mCurrentFirstVisibleItem = firstVisibleItem;
+        mCurrentVisibleItemCount = visibleItemCount;
 
-      mPreviousFirstVisibleItem = (mPreviousFirstVisibleItem == -1) ? mCurrentFirstVisibleItem
-          : mPreviousFirstVisibleItem;
-      mPreviousVisibleItemCount = (mPreviousVisibleItemCount == -1) ? mCurrentVisibleItemCount
-          : mPreviousVisibleItemCount;
+        mPreviousFirstVisibleItem = (mPreviousFirstVisibleItem == -1) ? mCurrentFirstVisibleItem : mPreviousFirstVisibleItem;
+        mPreviousVisibleItemCount = (mPreviousVisibleItemCount == -1) ? mCurrentVisibleItemCount : mPreviousVisibleItemCount;
 
-      checkAndHandleFirstVisibleCellChange();
-      checkAndHandleLastVisibleCellChange();
+        checkAndHandleFirstVisibleCellChange();
+        checkAndHandleLastVisibleCellChange();
 
-      mPreviousFirstVisibleItem = mCurrentFirstVisibleItem;
-      mPreviousVisibleItemCount = mCurrentVisibleItemCount;
+        mPreviousFirstVisibleItem = mCurrentFirstVisibleItem;
+        mPreviousVisibleItemCount = mCurrentVisibleItemCount;
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG_LOG, "onScroll: " + ex.getMessage());
+      }
     }
 
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState)
     {
-      mCurrentScrollState = scrollState;
-      mScrollState = scrollState;
-      isScrollCompleted();
+      try
+      {
+        mCurrentScrollState = scrollState;
+        mScrollState = scrollState;
+        isScrollCompleted();
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG_LOG, "onScrollStateChanged: " + ex.getMessage());
+      }
     }
 
     /**
@@ -735,16 +829,23 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
      */
     private void isScrollCompleted()
     {
-      if (mCurrentVisibleItemCount > 0 && mCurrentScrollState == SCROLL_STATE_IDLE)
+      try
       {
-        if (mCellIsMobile && mIsMobileScrolling)
+        if (mCurrentVisibleItemCount > 0 && mCurrentScrollState == SCROLL_STATE_IDLE)
         {
-          handleMobileCellScroll();
+          if (mCellIsMobile && mIsMobileScrolling)
+          {
+            handleMobileCellScroll();
+          }
+          else if (mIsWaitingForScrollFinish)
+          {
+            touchEventsEnded();
+          }
         }
-        else if (mIsWaitingForScrollFinish)
-        {
-          touchEventsEnded();
-        }
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG_LOG, "isScrollCompleted: " + ex.getMessage());
       }
     }
 
@@ -754,13 +855,20 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
      */
     public void checkAndHandleFirstVisibleCellChange()
     {
-      if (mCurrentFirstVisibleItem != mPreviousFirstVisibleItem)
+      try
       {
-        if (mCellIsMobile && mMobileItemId != INVALID_ID)
+        if (mCurrentFirstVisibleItem != mPreviousFirstVisibleItem)
         {
-          updateNeighborViewsForID(mMobileItemId);
-          handleCellSwitch();
+          if (mCellIsMobile && mMobileItemId != INVALID_ID)
+          {
+            updateNeighborViewsForID(mMobileItemId);
+            handleCellSwitch();
+          }
         }
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG_LOG, "checkAndHandleFirstVisibleCellChange: " + ex.getMessage());
       }
     }
 
@@ -770,21 +878,32 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
      */
     public void checkAndHandleLastVisibleCellChange()
     {
-      int currentLastVisibleItem = mCurrentFirstVisibleItem + mCurrentVisibleItemCount;
-      int previousLastVisibleItem = mPreviousFirstVisibleItem + mPreviousVisibleItemCount;
-      if (currentLastVisibleItem != previousLastVisibleItem)
+      try
       {
-        if (mCellIsMobile && mMobileItemId != INVALID_ID)
+        int currentLastVisibleItem = mCurrentFirstVisibleItem + mCurrentVisibleItemCount;
+        int previousLastVisibleItem = mPreviousFirstVisibleItem + mPreviousVisibleItemCount;
+
+        if (currentLastVisibleItem != previousLastVisibleItem)
         {
-          updateNeighborViewsForID(mMobileItemId);
-          handleCellSwitch();
+          if (mCellIsMobile && mMobileItemId != INVALID_ID)
+          {
+            updateNeighborViewsForID(mMobileItemId);
+            handleCellSwitch();
+          }
         }
+      }
+      catch (Exception ex)
+      {
+        Log.e(TAG_LOG, "checkAndHandleLastVisibleCellChange: " + ex.getMessage());
       }
     }
   };
 
   interface IVerticalScrollCallback
   {
+    /**
+     * A callback that indicates that the listview has been scrolled vertically.
+     */
     void onVerticalScroll();
   }
 }

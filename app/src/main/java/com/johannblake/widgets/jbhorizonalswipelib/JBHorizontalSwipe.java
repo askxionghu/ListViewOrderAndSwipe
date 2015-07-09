@@ -139,12 +139,20 @@ public class JBHorizontalSwipe
       if (this.scrollingRight)
       {
         float x = vTop.getX() + this.scrollDeltaX;
-        vTop.setX(x);
+
+        if (vTop.getX() >= (vTop.getWidth() - 1))
+          vTop.setX(-(vTop.getWidth() - 1));
+        else
+          vTop.setX(x);
       }
       else
       {
         float x = vTop.getX() - this.scrollDeltaX;
-        vTop.setX(x);
+
+        if (vTop.getX() <= -(vTop.getWidth() - 1))
+          vTop.setX(vTop.getWidth());
+        else
+          vTop.setX(x);
       }
 
       float alpha = (vTop.getWidth() - Math.abs(vTop.getX() - this.scrollDeltaX)) / vTop.getWidth();
