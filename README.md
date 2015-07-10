@@ -18,6 +18,8 @@ When you swipe an item to delete it, the bottom view (where the Undo button is s
 
 The app is constructed in such a way that you can easily replace the bottom view with whatever kind of view you need in your listview to provide the functionality that is appropriate for your app.
 
+If you download and use this code, as sign of gratitude, please star the project.
+
 
 ### Demo
 
