@@ -12,7 +12,7 @@ A common feature in many apps is having a list of items where you want to allow 
 
 The swipe-to-delete function mimics the functionality in Google's Gmail app. In the Gmail app, when you swipe an item in the list of emails in your inbox, the item is not immediately deleted. Instead, a view appears beneath the view that was swiped away and this view contains a label at the far left that reads "Deleted" and on the far right is an "Undo" button. While the item is deleted at this point, you do have the opportunity to undo the deletion either by tapping on the Undo button or swiping the item again to restore it to its previous state. This same functionality is incorporated into this app.
 
-To reorder items, a "Move" icon is show on the far right of each item. It looks like a hamburger icon, that is typically shown in the upper left corner of many Android apps. The Google News app uses this same icon on the activity where you can reorder your topics. To reorder a list item, just press down on the icon and drag the row to the new location.
+To reorder items, a "Move" icon is show on the far right of each item. It looks like a hamburger icon, that is typically shown in the upper left corner of many Android apps. The Google News app uses this same icon on the activity where you can reorder your news topics. To reorder a list item, just press down on the icon and drag the row to the new location.
 
 When you swipe an item to delete it, the bottom view (where the Undo button is shown) remains visible either until you delete another item, tap on another item, scroll the list, or press the Undo button.
 
@@ -30,9 +30,13 @@ The app is based on three components that interact with each other. One of the c
 
 Daniel's video can be viewed at: https://www.youtube.com/watch?v=_BZIvjMgH-Q
 
-The second component is the swipe-to-delete functionality, written by Chet Haase, also from Google. However, only a portion of his code was incorporated in this app as it had no support for a bottom view when swiping a top view. Chet's code also deletes the item immediately making it impossible to allow the user to undo the deletion. Chet's code however does have a bug. If the listview has less items than the height of the listview can contain and you delete the last item, its background remains on the listview. This was fixed in this app.
+The second component is the swipe-to-delete functionality, written by Chet Haase, also from Google. However, only a portion of his code was incorporated in this app as it had no support for a bottom view when swiping a top view. Only the removal with animation was used and not the actual swiping functionality as this had to be integrated in with other touch events from elsewhere and Chet's code would have made this difficult to achieve. 
 
-The third component is a library called JBHorizontalSwipe that provides support for swiping list items. It acts as a controller and is not a widget. It can be used to swipe any kind of view out of its parent container revealing a view beneath it. It supports animating the swipe on finger-up, velocity swiping and swiping the top view back onto the screen either from the left or right. Another reason why this module was developed this way is to provide future support where you may want to swipe multiple items simultaneously.
+Chet's code also deletes the item immediately making it impossible to allow the user to undo the deletion. His code however does have one bug. If the listview has less items than the height of the listview can contain and you delete the last item, its background remains on the listview. This was fixed in this app.
+
+Chet's video can be viewed at: https://www.youtube.com/watch?v=YCHNAi9kJI4
+
+The third component is a library called JBHorizontalSwipe that provides support for swiping list items. It acts as a controller and is not a widget. It can be used to swipe any kind of view out of its parent container revealing a view beneath it. It supports animating the swipe on finger-up, velocity swiping and swiping the top view back onto the screen either from the left or right. Another reason why this module was developed this way is to provide future support where you may want to swipe multiple items simultaneously. While swiping multiple list items may or may not be forseeable, there are no doubt apps that contain functionality where multiple views do need to be swiped simultaneously. The JBHeaderScroll shows where this is used but when scrolling multiple views vertically instead of horizontally.
 
 One of the most important concepts in this app is that no scroll listeners are used, which would be problematic and cause undesirable side effects when attempting to coordinate vertical and horizontal swiping as well as having to deal with a bottom view that needs to deal with its own touch events.
 
@@ -40,7 +44,7 @@ Touch events are handled in two separate locations. One is in the listview (Pers
 
 By keeping these three components separate, you can more easily customize the code to handle variations of re-ordering and swiping that are more applicable to your app.
 
-To create a bottom view, take a look at the code in the person_item.xml layout file. 
+To create a bottom view, take a look at the code in the person_item.xml layout file:
 
 ``` xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -142,7 +146,7 @@ The button used for undoing a deletion is a customized Button control called But
 
 Finally, an ImageView (ivDrag) is used to handle dragging a list item to a new position. You must set its tag to "DragIcon" in order for dragging to work.
 
-Other than this, you can customize the top and bottom views according to your app's requirements. You should still stick with the layout for the list item as shown here. For instance, the first child view is a LinearLayout (this is the bottom view). This LinearLayout has a RelativeLayout. This is where your bottom view's controls can be placed. Don't eliminate the LinearLayout or the code will fail and keep its RelativeLayout if possible. The top view should only be a RelativeLayout.
+Other than this, you can customize the top and bottom views according to your app's requirements. You should still stick with the layout for the list item as shown here. For instance, the first child view is a LinearLayout (this is the bottom view). This LinearLayout has a RelativeLayout. This is where your bottom view's controls can be placed. Don't eliminate the LinearLayout or the code will fail. And keep its RelativeLayout if possible. The top view should only be a RelativeLayout.
 
 ### Acknowledgments
 
