@@ -2,7 +2,7 @@ ListView Order and Swipe
 ========================
 An Android app that demonstrates a listview that allows you to reorder items by dragging and deleting items by swiping them.
 
-![ListViewOrderAndSwipe](https://github.com/JohannBlake/ListViewOrderAndSwipe/blob/master/Graphics/ListViewOrderAndSwipe-Demo.gif)
+![ListViewOrderAndSwipe](https://github.com/JohannBlake/ListViewOrderAndSwipe/blob/SwipeListViewItem/Graphics/ListViewOrderAndSwipe-Demo.gif)
 
 
 
