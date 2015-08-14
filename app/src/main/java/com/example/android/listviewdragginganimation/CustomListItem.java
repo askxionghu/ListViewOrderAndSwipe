@@ -12,7 +12,7 @@ import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
  */
 public class CustomListItem extends FrameLayout
 {
-  private JBHorizontalSwipe jbHorizontalSwipe;
+  private JBHorizontalSwipe mJBHorizontalSwipe;
 
   public CustomListItem(Context context, AttributeSet attrs)
   {
@@ -28,8 +28,8 @@ public class CustomListItem extends FrameLayout
   @Override
   public boolean onTouchEvent(MotionEvent ev)
   {
-    if (this.jbHorizontalSwipe != null)
-      this.jbHorizontalSwipe.onScrollerDispatchTouchEventListener(this, ev);
+    if (this.mJBHorizontalSwipe != null)
+      this.mJBHorizontalSwipe.onScrollerDispatchTouchEventListener(this, ev);
 
     return super.onTouchEvent(ev);
   }
@@ -40,6 +40,6 @@ public class CustomListItem extends FrameLayout
    */
   public void setJBHeaderRef(JBHorizontalSwipe jbHorizontalSwipe)
   {
-    this.jbHorizontalSwipe = jbHorizontalSwipe;
+    this.mJBHorizontalSwipe = jbHorizontalSwipe;
   }
 }

@@ -43,447 +43,342 @@ import com.johannblake.widgets.jbhorizonalswipelib.JBHorizontalSwipe;
 
 import java.util.ArrayList;
 
-public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.IJBHorizontalSwipeTouch
-{
-  private final String TAG_LOG = "PersonListVewOrder";
-  private final String TAG_DRAG_ICON = "DragIcon";
+public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.IJBHorizontalSwipeTouch {
+    private final String TAG_LOG = "PersonListVewOrder";
+    private final String TAG_DRAG_ICON = "DragIcon";
 
-  private final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 15;
-  private final int MOVE_DURATION = 150;
-  private final int LINE_THICKNESS = 1;
+    private final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 15;
+    private final int MOVE_DURATION = 150;
+    private final int LINE_THICKNESS = 1;
 
-  public ArrayList<Person> persons;
+    public ArrayList<Person> mPersons;
 
-  private int mLastEventY = -1;
+    private int mLastEventY = -1;
 
-  private int mDownY = -1;
-  private int mDownX = -1;
+    private int mDownY = -1;
+    private int mDownX = -1;
 
-  private int mTotalOffset = 0;
+    private int mTotalOffset = 0;
 
-  private boolean mCellIsMobile = false;
-  private boolean mIsMobileScrolling = false;
-  private int mSmoothScrollAmountAtEdge = 0;
+    private boolean mCellIsMobile = false;
+    private boolean mIsMobileScrolling = false;
+    private int mSmoothScrollAmountAtEdge = 0;
 
-  private final int INVALID_ID = -1;
-  private long mAboveItemId = INVALID_ID;
-  private long mMobileItemId = INVALID_ID;
-  private long mBelowItemId = INVALID_ID;
+    private final int INVALID_ID = -1;
+    private long mAboveItemId = INVALID_ID;
+    private long mMobileItemId = INVALID_ID;
+    private long mBelowItemId = INVALID_ID;
 
-  private BitmapDrawable mHoverCell;
-  private Rect mHoverCellCurrentBounds;
-  private Rect mHoverCellOriginalBounds;
+    private BitmapDrawable mHoverCell;
+    private Rect mHoverCellCurrentBounds;
+    private Rect mHoverCellOriginalBounds;
 
-  private final int INVALID_POINTER_ID = -1;
-  private int mActivePointerId = INVALID_POINTER_ID;
+    private final int INVALID_POINTER_ID = -1;
+    private int mActivePointerId = INVALID_POINTER_ID;
 
-  private boolean mIsWaitingForScrollFinish = false;
-  private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
+    private boolean mIsWaitingForScrollFinish = false;
+    private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
 
-  private boolean disableScrolling;
-  private Context context;
-  private IVerticalScrollCallback iVerticalScrollCallback;
+    private boolean mDisableScrolling;
+    private Context mContext;
+    private IVerticalScrollCallback mIVerticalScrollCallback;
 
-  public PersonListViewOrder(Context context)
-  {
-    super(context);
-    init(context);
-  }
-
-  public PersonListViewOrder(Context context, AttributeSet attrs, int defStyle)
-  {
-    super(context, attrs, defStyle);
-    init(context);
-  }
-
-  public PersonListViewOrder(Context context, AttributeSet attrs)
-  {
-    super(context, attrs);
-    init(context);
-  }
-
-  public void init(Context context)
-  {
-    try
-    {
-      this.context = context;
-      setOnScrollListener(mScrollListener);
-      DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-      mSmoothScrollAmountAtEdge = (int) (SMOOTH_SCROLL_AMOUNT_AT_EDGE / metrics.density);
+    public PersonListViewOrder(Context context) {
+        super(context);
+        init(context);
     }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "init: " + ex.getMessage());
+
+    public PersonListViewOrder(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        init(context);
     }
-  }
 
-
-  /**
-   * Creates the hover cell with the appropriate bitmap and of appropriate
-   * size. The hover cell's BitmapDrawable is drawn on top of the bitmap every
-   * single time an invalidate call is made.
-   */
-  private BitmapDrawable getAndAddHoverView(View v)
-  {
-    try
-    {
-      int w = v.getWidth();
-      int h = v.getHeight();
-      int top = v.getTop();
-      int left = v.getLeft();
-
-      Bitmap b = getBitmapWithBorder(v);
-
-      BitmapDrawable drawable = new BitmapDrawable(getResources(), b);
-
-      mHoverCellOriginalBounds = new Rect(left, top, left + w, top + h);
-      mHoverCellCurrentBounds = new Rect(mHoverCellOriginalBounds);
-
-      drawable.setBounds(mHoverCellCurrentBounds);
-
-      return drawable;
+    public PersonListViewOrder(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init(context);
     }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "getAndAddHoverView: " + ex.getMessage());
-      return null;
+
+    public void init(Context context) {
+        mContext = context;
+        setOnScrollListener(mScrollListener);
+        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        mSmoothScrollAmountAtEdge = (int) (SMOOTH_SCROLL_AMOUNT_AT_EDGE / metrics.density);
     }
-  }
 
-  /**
-   * Draws a black border over the screenshot of the view passed in.
-   */
-  private Bitmap getBitmapWithBorder(View v)
-  {
-    try
-    {
-      Bitmap bitmap = getBitmapFromView(v);
-      Canvas can = new Canvas(bitmap);
 
-      Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+    /**
+     * Creates the hover cell with the appropriate bitmap and of appropriate
+     * size. The hover cell's BitmapDrawable is drawn on top of the bitmap every
+     * single time an invalidate call is made.
+     */
+    private BitmapDrawable getAndAddHoverView(View v) {
+        int w = v.getWidth();
+        int h = v.getHeight();
+        int top = v.getTop();
+        int left = v.getLeft();
 
-      Paint paint = new Paint();
-      paint.setStyle(Paint.Style.STROKE);
-      paint.setStrokeWidth(LINE_THICKNESS);
-      paint.setColor(getResources().getColor(R.color.grey_600));
+        Bitmap b = getBitmapWithBorder(v);
 
-      can.drawBitmap(bitmap, 0, 0, null);
-      can.drawRect(rect, paint);
+        BitmapDrawable drawable = new BitmapDrawable(getResources(), b);
 
-      return bitmap;
+        mHoverCellOriginalBounds = new Rect(left, top, left + w, top + h);
+        mHoverCellCurrentBounds = new Rect(mHoverCellOriginalBounds);
+
+        drawable.setBounds(mHoverCellCurrentBounds);
+
+        return drawable;
     }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "getBitmapWithBorder: " + ex.getMessage());
-      return null;
+
+    /**
+     * Draws a black border over the screenshot of the view passed in.
+     */
+    private Bitmap getBitmapWithBorder(View v) {
+        Bitmap bitmap = getBitmapFromView(v);
+        Canvas can = new Canvas(bitmap);
+
+        Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        Paint paint = new Paint();
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(LINE_THICKNESS);
+        paint.setColor(getResources().getColor(R.color.grey_600));
+
+        can.drawBitmap(bitmap, 0, 0, null);
+        can.drawRect(rect, paint);
+
+        return bitmap;
     }
-  }
 
-  /**
-   * Returns a bitmap showing a screenshot of the view passed in.
-   */
-  private Bitmap getBitmapFromView(View v)
-  {
-    try
-    {
-      Bitmap bitmap = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
-      Canvas canvas = new Canvas(bitmap);
-      v.draw(canvas);
-      return bitmap;
+    /**
+     * Returns a bitmap showing a screenshot of the view passed in.
+     */
+    private Bitmap getBitmapFromView(View v) {
+        Bitmap bitmap = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        v.draw(canvas);
+        return bitmap;
     }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "getBitmapFromView: " + ex.getMessage());
-      return null;
+
+    /**
+     * Stores a reference to the views above and below the item currently
+     * corresponding to the hover cell. It is important to note that if this
+     * item is either at the top or bottom of the list, mAboveItemId or mBelowItemId
+     * may be invalid.
+     */
+    private void updateNeighborViewsForID(long itemID) {
+        int position = getPositionForID(itemID);
+        PersonAdapter adapter = ((PersonAdapter) getAdapter());
+        mAboveItemId = adapter.getItemId(position - 1);
+        mBelowItemId = adapter.getItemId(position + 1);
     }
-  }
 
-  /**
-   * Stores a reference to the views above and below the item currently
-   * corresponding to the hover cell. It is important to note that if this
-   * item is either at the top or bottom of the list, mAboveItemId or mBelowItemId
-   * may be invalid.
-   */
-  private void updateNeighborViewsForID(long itemID)
-  {
-    try
-    {
-      int position = getPositionForID(itemID);
-      PersonAdapter adapter = ((PersonAdapter) getAdapter());
-      mAboveItemId = adapter.getItemId(position - 1);
-      mBelowItemId = adapter.getItemId(position + 1);
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "updateNeighborViewsForID: " + ex.getMessage());
-    }
-  }
+    /**
+     * Retrieves the view in the list corresponding to itemID
+     */
+    public View getViewForID(long itemID) {
+        int firstVisiblePosition = getFirstVisiblePosition();
+        PersonAdapter adapter = ((PersonAdapter) getAdapter());
 
-  /**
-   * Retrieves the view in the list corresponding to itemID
-   */
-  public View getViewForID(long itemID)
-  {
-    try
-    {
-      int firstVisiblePosition = getFirstVisiblePosition();
-      PersonAdapter adapter = ((PersonAdapter) getAdapter());
+        for (int i = 0; i < getChildCount(); i++) {
+            View v = getChildAt(i);
+            int position = firstVisiblePosition + i;
+            long id = adapter.getItemId(position);
 
-      for (int i = 0; i < getChildCount(); i++)
-      {
-        View v = getChildAt(i);
-        int position = firstVisiblePosition + i;
-        long id = adapter.getItemId(position);
-
-        if (id == itemID)
-        {
-          return v;
-        }
-      }
-
-      return null;
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "getViewForID: " + ex.getMessage());
-      return null;
-    }
-  }
-
-  /**
-   * Retrieves the position in the list corresponding to itemID
-   */
-  public int getPositionForID(long itemID)
-  {
-    try
-    {
-      View v = getViewForID(itemID);
-      if (v == null)
-      {
-        return -1;
-      }
-      else
-      {
-        return getPositionForView(v);
-      }
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "getPositionForID: " + ex.getMessage());
-      return 0;
-    }
-  }
-
-  /**
-   * dispatchDraw gets invoked when all the child views are about to be drawn.
-   * By overriding this method, the hover cell (BitmapDrawable) can be drawn
-   * over the listview's items whenever the listview is redrawn.
-   */
-  @Override
-  protected void dispatchDraw(Canvas canvas)
-  {
-    try
-    {
-      super.dispatchDraw(canvas);
-
-      if (mHoverCell != null)
-        mHoverCell.draw(canvas);
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "dispatchDraw: " + ex.getMessage());
-    }
-  }
-
-
-  /**
-   * Returns the most inner view that contains the xy coordinate.
-   *
-   * @param v This method gets called recursively. The initial call should be the root view.
-   * @param x The X location to be tested.
-   * @param y The Y location to be tested.
-   * @return Returns the most inner view that contains the XY coordinate or null if no view could be found.
-   */
-  private View findViewAtPositionWithTag(View v, int x, int y, String tag)
-  {
-    try
-    {
-      View vXY = null;
-
-      if (v instanceof ViewGroup)
-      {
-        ViewGroup viewGroup = (ViewGroup) v;
-
-        for (int i = 0; i < viewGroup.getChildCount(); i++)
-        {
-          View c = viewGroup.getChildAt(i);
-
-          int loc[] = new int[2];
-          c.getLocationOnScreen(loc);
-
-          if ((x >= loc[0] && (x <= (loc[0] + c.getWidth()))) && (y >= loc[1] && (y <= (loc[1] + c.getHeight()))))
-          {
-            vXY = c;
-            View viewAtPosition = findViewAtPositionWithTag(c, x, y, tag);
-
-            if ((viewAtPosition != null) && (viewAtPosition.getTag() != null) && viewAtPosition.getTag().equals(tag))
-            {
-              vXY = viewAtPosition;
-              break;
+            if (id == itemID) {
+                return v;
             }
-          }
         }
-      }
 
-      return vXY;
+        return null;
     }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "findViewAtPositionWithTag: " + ex.getMessage());
-      return null;
+
+    /**
+     * Retrieves the position in the list corresponding to itemID
+     */
+    public int getPositionForID(long itemID) {
+        View v = getViewForID(itemID);
+
+        if (v == null) {
+            return -1;
+        } else {
+            return getPositionForView(v);
+        }
     }
-  }
+
+    /**
+     * dispatchDraw gets invoked when all the child views are about to be drawn.
+     * By overriding this method, the hover cell (BitmapDrawable) can be drawn
+     * over the listview's items whenever the listview is redrawn.
+     */
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        super.dispatchDraw(canvas);
+
+        if (mHoverCell != null)
+            mHoverCell.draw(canvas);
+    }
 
 
-  @Override
-  public boolean onTouchEvent(final MotionEvent event)
-  {
-    try
-    {
-      int action = event.getAction() & MotionEvent.ACTION_MASK;
+    /**
+     * Returns the most inner view that contains the xy coordinate.
+     *
+     * @param v This method gets called recursively. The initial call should be the root view.
+     * @param x The X location to be tested.
+     * @param y The Y location to be tested.
+     * @return Returns the most inner view that contains the XY coordinate or null if no view could be found.
+     */
+    private View findViewAtPositionWithTag(View v, int x, int y, String tag) {
+        View vXY = null;
 
-      if (this.disableScrolling && (action != MotionEvent.ACTION_UP))
-        return true;
+        if (v instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) v;
 
-      switch (action)
-      {
-        case MotionEvent.ACTION_DOWN:
-          mDownX = (int) event.getX();
-          mDownY = (int) event.getY();
-          mActivePointerId = event.getPointerId(0);
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                View c = viewGroup.getChildAt(i);
 
-          // Find the view that the user pressed their finger down on.
-          View v = findViewAtPositionWithTag(getRootView(), (int) event.getRawX(), (int) event.getRawY(), TAG_DRAG_ICON);
+                int loc[] = new int[2];
+                c.getLocationOnScreen(loc);
 
-          // If the view contains a tag set to "DragIcon", it means that the user wants to
-          // reorder the list item.
-          if ((v != null) && (v.getTag() != null) && (v.getTag().equals(TAG_DRAG_ICON)))
-          {
-            mTotalOffset = 0;
+                if ((x >= loc[0] && (x <= (loc[0] + c.getWidth()))) && (y >= loc[1] && (y <= (loc[1] + c.getHeight())))) {
+                    vXY = c;
+                    View viewAtPosition = findViewAtPositionWithTag(c, x, y, tag);
 
-            int position = pointToPosition(mDownX, mDownY);
-            int itemNum = position - getFirstVisiblePosition();
+                    if ((viewAtPosition != null) && (viewAtPosition.getTag() != null) && viewAtPosition.getTag().equals(tag)) {
+                        vXY = viewAtPosition;
+                        break;
+                    }
+                }
+            }
+        }
 
-            View selectedView = getChildAt(itemNum);
-            mMobileItemId = getAdapter().getItemId(position);
-            mHoverCell = getAndAddHoverView(selectedView);
-            selectedView.setVisibility(INVISIBLE);
+        return vXY;
+    }
 
-            mCellIsMobile = true;
 
-            updateNeighborViewsForID(mMobileItemId);
-          }
+    @Override
+    public boolean onTouchEvent(final MotionEvent event) {
+        int action = event.getAction() & MotionEvent.ACTION_MASK;
 
-          break;
-
-        case MotionEvent.ACTION_MOVE:
-          if (mActivePointerId == INVALID_POINTER_ID)
-            break;
-
-          int pointerIndex = event.findPointerIndex(mActivePointerId);
-
-          mLastEventY = (int) event.getY(pointerIndex);
-          int deltaY = mLastEventY - mDownY;
-
-          if (mCellIsMobile)
-          {
-            mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left, mHoverCellOriginalBounds.top + deltaY + mTotalOffset);
-            mHoverCell.setBounds(mHoverCellCurrentBounds);
-            invalidate();
-
-            handleCellSwitch();
-
-            mIsMobileScrolling = false;
-            handleMobileCellScroll();
-
-            return false;
-          }
-          else if ((Math.abs(deltaY) > 0) && (iVerticalScrollCallback != null))
-            iVerticalScrollCallback.onVerticalScroll();
-
-          break;
-
-        case MotionEvent.ACTION_UP:
-          touchEventsEnded();
-
-          if (this.disableScrolling)
-          {
-            // Enable the adapter to process touch events for list items.
-            PersonAdapter personAdapter = (PersonAdapter) getAdapter();
-            JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = personAdapter;
-
-            this.disableScrolling = false;
-
-            // If a list item received the ACTION_DOWN but then the user started a horizontal swipe,
-            // the background color of the list item (its top view) will be in the selected state. We need to reset
-            // the background color to the unselected state.
-
-            View selectedView = ijbHorizontalSwipeAdapter.getSelectedView();
-
-            if (selectedView != null)
-              selectedView.setPressed(false);
-
+        if (mDisableScrolling && (action != MotionEvent.ACTION_UP))
             return true;
-          }
 
-          this.disableScrolling = false;
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                mDownX = (int) event.getX();
+                mDownY = (int) event.getY();
+                mActivePointerId = event.getPointerId(0);
 
-          break;
+                // Find the view that the user pressed their finger down on.
+                View v = findViewAtPositionWithTag(getRootView(), (int) event.getRawX(), (int) event.getRawY(), TAG_DRAG_ICON);
 
-        case MotionEvent.ACTION_CANCEL:
-          touchEventsCancelled();
-          break;
+                // If the view contains a tag set to "DragIcon", it means that the user wants to
+                // reorder the list item.
+                if ((v != null) && (v.getTag() != null) && (v.getTag().equals(TAG_DRAG_ICON))) {
+                    mTotalOffset = 0;
 
-        case MotionEvent.ACTION_POINTER_UP:
+                    int position = pointToPosition(mDownX, mDownY);
+                    int itemNum = position - getFirstVisiblePosition();
 
-          /**If a multitouch event took place and the original touch dictating
-           * the movement of the hover cell has ended, then the dragging event
-           * ends and the hover cell is animated to its corresponding position
-           * in the listview.
-           */
-          pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
-          final int pointerId = event.getPointerId(pointerIndex);
+                    View selectedView = getChildAt(itemNum);
+                    mMobileItemId = getAdapter().getItemId(position);
+                    mHoverCell = getAndAddHoverView(selectedView);
+                    selectedView.setVisibility(INVISIBLE);
 
-          if (pointerId == mActivePointerId)
-            touchEventsEnded();
+                    mCellIsMobile = true;
 
-          break;
+                    updateNeighborViewsForID(mMobileItemId);
+                }
 
-        default:
-          break;
-      }
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                if (mActivePointerId == INVALID_POINTER_ID)
+                    break;
+
+                int pointerIndex = event.findPointerIndex(mActivePointerId);
+
+                mLastEventY = (int) event.getY(pointerIndex);
+                int deltaY = mLastEventY - mDownY;
+
+                if (mCellIsMobile && (mHoverCellCurrentBounds != null)) {
+                    mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left, mHoverCellOriginalBounds.top + deltaY + mTotalOffset);
+                    mHoverCell.setBounds(mHoverCellCurrentBounds);
+                    invalidate();
+
+                    handleCellSwitch();
+
+                    mIsMobileScrolling = false;
+                    handleMobileCellScroll();
+
+                    return false;
+                } else if ((Math.abs(deltaY) > 0) && (mIVerticalScrollCallback != null))
+                    mIVerticalScrollCallback.onVerticalScroll();
+
+                break;
+
+            case MotionEvent.ACTION_UP:
+                touchEventsEnded();
+
+                if (mDisableScrolling) {
+                    // Enable the adapter to process touch events for list items.
+                    PersonAdapter personAdapter = (PersonAdapter) getAdapter();
+                    JBHorizontalSwipe.IJBHorizontalSwipeAdapter ijbHorizontalSwipeAdapter = personAdapter;
+
+                    mDisableScrolling = false;
+
+                    // If a list item received the ACTION_DOWN but then the user started a horizontal swipe,
+                    // the background color of the list item (its top view) will be in the selected state. We need to reset
+                    // the background color to the unselected state.
+
+                    View selectedView = ijbHorizontalSwipeAdapter.getSelectedView();
+
+                    if (selectedView != null)
+                        selectedView.setPressed(false);
+
+                    return true;
+                }
+
+                mDisableScrolling = false;
+
+                break;
+
+            case MotionEvent.ACTION_CANCEL:
+                touchEventsCancelled();
+                break;
+
+            case MotionEvent.ACTION_POINTER_UP:
+
+                /**If a multitouch event took place and the original touch dictating
+                 * the movement of the hover cell has ended, then the dragging event
+                 * ends and the hover cell is animated to its corresponding position
+                 * in the listview.
+                 */
+                pointerIndex = (event.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+                final int pointerId = event.getPointerId(pointerIndex);
+
+                if (pointerId == mActivePointerId)
+                    touchEventsEnded();
+
+                break;
+
+            default:
+                break;
+        }
+
+        return super.onTouchEvent(event);
     }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "onTouchEvent: " + ex.getMessage());
+
+
+    /**
+     * Stores a reference to the callback that will be used to inform the calling client when the listview is scrolled vertically.
+     */
+    public void setVerticalScrollCallback(IVerticalScrollCallback iVerticalScrollCallback) {
+        mIVerticalScrollCallback = iVerticalScrollCallback;
     }
 
-    return super.onTouchEvent(event);
-  }
 
-
-  /**
-   * Stores a reference to the callback that will be used to inform the calling client when the listview is scrolled vertically.
-   */
-  public void setVerticalScrollCallback(IVerticalScrollCallback iVerticalScrollCallback)
-  {
-    this.iVerticalScrollCallback = iVerticalScrollCallback;
-  }
-
-
-  @Override
-  public void setDisableScrolling(boolean disable)
-  {
+    @Override
+    public void setDisableScrolling(boolean disable) {
     /*
      * When a row is swiped horizontally, the top view will receive the ACTION_DOWN
      * event, which causes the top view in the item to appear selected. Normally,
@@ -495,415 +390,307 @@ public class PersonListViewOrder extends ListView implements JBHorizontalSwipe.I
      * in the onTouchEvent method from being processed. When an ACTION_UP occurs, this
      * flag will get reset to false, allowing the future motion events to be processed.
      */
-    this.disableScrolling = disable;
-  }
+        mDisableScrolling = disable;
+    }
 
-  /**
-   * This method determines whether the hover cell has been shifted far enough
-   * to invoke a cell swap. If so, then the respective cell swap candidate is
-   * determined and the data set is changed. Upon posting a notification of the
-   * data set change, a layout is invoked to place the cells in the right place.
-   * Using a ViewTreeObserver and a corresponding OnPreDrawListener, we can
-   * offset the cell being swapped to where it previously was and then animate it to
-   * its new position.
-   */
-  private void handleCellSwitch()
-  {
-    try
-    {
-      final int deltaY = mLastEventY - mDownY;
-      int deltaYTotal = mHoverCellOriginalBounds.top + mTotalOffset + deltaY;
+    /**
+     * This method determines whether the hover cell has been shifted far enough
+     * to invoke a cell swap. If so, then the respective cell swap candidate is
+     * determined and the data set is changed. Upon posting a notification of the
+     * data set change, a layout is invoked to place the cells in the right place.
+     * Using a ViewTreeObserver and a corresponding OnPreDrawListener, we can
+     * offset the cell being swapped to where it previously was and then animate it to
+     * its new position.
+     */
+    private void handleCellSwitch() {
+        final int deltaY = mLastEventY - mDownY;
+        int deltaYTotal = mHoverCellOriginalBounds.top + mTotalOffset + deltaY;
 
-      View belowView = getViewForID(mBelowItemId);
-      View mobileView = getViewForID(mMobileItemId);
-      View aboveView = getViewForID(mAboveItemId);
+        View belowView = getViewForID(mBelowItemId);
+        View mobileView = getViewForID(mMobileItemId);
+        View aboveView = getViewForID(mAboveItemId);
 
-      boolean isBelow = (belowView != null) && (deltaYTotal > belowView.getTop());
-      boolean isAbove = (aboveView != null) && (deltaYTotal < aboveView.getTop());
+        boolean isBelow = (belowView != null) && (deltaYTotal > belowView.getTop());
+        boolean isAbove = (aboveView != null) && (deltaYTotal < aboveView.getTop());
 
-      if (isBelow || isAbove)
-      {
-        final long switchItemID = isBelow ? mBelowItemId : mAboveItemId;
-        View switchView = isBelow ? belowView : aboveView;
-        final int originalItem = getPositionForView(mobileView);
+        if (isBelow || isAbove) {
+            final long switchItemID = isBelow ? mBelowItemId : mAboveItemId;
+            View switchView = isBelow ? belowView : aboveView;
+            final int originalItem = getPositionForView(mobileView);
 
-        if (switchView == null)
-        {
-          updateNeighborViewsForID(mMobileItemId);
-          return;
+            if (switchView == null) {
+                updateNeighborViewsForID(mMobileItemId);
+                return;
+            }
+
+            swapElements(mPersons, originalItem, getPositionForView(switchView));
+            ((BaseAdapter) getAdapter()).notifyDataSetChanged();
+
+            mDownY = mLastEventY;
+
+            final int switchViewStartTop = switchView.getTop();
+
+            if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.KITKAT) {
+                mobileView.setVisibility(View.VISIBLE);
+                switchView.setVisibility(View.INVISIBLE);
+            }
+
+            updateNeighborViewsForID(mMobileItemId);
+
+            final ViewTreeObserver observer = getViewTreeObserver();
+
+            observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                public boolean onPreDraw() {
+                    observer.removeOnPreDrawListener(this);
+
+                    View switchView = getViewForID(switchItemID);
+
+                    mTotalOffset += deltaY;
+
+                    int switchViewNewTop = switchView.getTop();
+                    int delta = switchViewStartTop - switchViewNewTop;
+
+                    switchView.setTranslationY(delta);
+
+                    ObjectAnimator animator = ObjectAnimator.ofFloat(switchView, View.TRANSLATION_Y, 0);
+                    animator.setDuration(MOVE_DURATION);
+                    animator.start();
+
+                    return true;
+                }
+            });
         }
+    }
 
-        swapElements(persons, originalItem, getPositionForView(switchView));
-        ((BaseAdapter) getAdapter()).notifyDataSetChanged();
+    private void swapElements(ArrayList arrayList, int indexOne, int indexTwo) {
+        Object temp = arrayList.get(indexOne);
+        arrayList.set(indexOne, arrayList.get(indexTwo));
+        arrayList.set(indexTwo, temp);
+    }
 
-        mDownY = mLastEventY;
 
-        final int switchViewStartTop = switchView.getTop();
+    /**
+     * Resets all the appropriate fields to a default state while also animating
+     * the hover cell back to its correct location.
+     */
+    private void touchEventsEnded() {
+        final View mobileView = getViewForID(mMobileItemId);
 
-        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.KITKAT)
-        {
-          mobileView.setVisibility(View.VISIBLE);
-          switchView.setVisibility(View.INVISIBLE);
+        if (mCellIsMobile || mIsWaitingForScrollFinish) {
+            mCellIsMobile = false;
+            mIsWaitingForScrollFinish = false;
+            mIsMobileScrolling = false;
+            mActivePointerId = INVALID_POINTER_ID;
+
+            // If the autoscroller has not completed scrolling, we need to wait for it to
+            // finish in order to determine the final location of where the hover cell
+            // should be animated to.
+            if (mScrollState != OnScrollListener.SCROLL_STATE_IDLE) {
+                mIsWaitingForScrollFinish = true;
+                return;
+            }
+
+            mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left, mobileView.getTop());
+
+            ObjectAnimator hoverViewAnimator = ObjectAnimator.ofObject(mHoverCell, "bounds", sBoundEvaluator, mHoverCellCurrentBounds);
+            hoverViewAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                    invalidate();
+                }
+            });
+
+            hoverViewAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    setEnabled(false);
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    mAboveItemId = INVALID_ID;
+                    mMobileItemId = INVALID_ID;
+                    mBelowItemId = INVALID_ID;
+                    mobileView.setVisibility(VISIBLE);
+                    mHoverCell = null;
+                    setEnabled(true);
+                    invalidate();
+                }
+            });
+
+            hoverViewAnimator.start();
+        } else {
+            touchEventsCancelled();
         }
-
-        updateNeighborViewsForID(mMobileItemId);
-
-        final ViewTreeObserver observer = getViewTreeObserver();
-        observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener()
-        {
-          public boolean onPreDraw()
-          {
-            observer.removeOnPreDrawListener(this);
-
-            View switchView = getViewForID(switchItemID);
-
-            mTotalOffset += deltaY;
-
-            int switchViewNewTop = switchView.getTop();
-            int delta = switchViewStartTop - switchViewNewTop;
-
-            switchView.setTranslationY(delta);
-
-            ObjectAnimator animator = ObjectAnimator.ofFloat(switchView, View.TRANSLATION_Y, 0);
-            animator.setDuration(MOVE_DURATION);
-            animator.start();
-
-            return true;
-          }
-        });
-      }
     }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "handleCellSwitch: " + ex.getMessage());
-    }
-  }
 
-  private void swapElements(ArrayList arrayList, int indexOne, int indexTwo)
-  {
-    try
-    {
-      Object temp = arrayList.get(indexOne);
-      arrayList.set(indexOne, arrayList.get(indexTwo));
-      arrayList.set(indexTwo, temp);
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "swapElements: " + ex.getMessage());
-    }
-  }
+    /**
+     * Resets all the appropriate fields to a default state.
+     */
+    private void touchEventsCancelled() {
+        View mobileView = getViewForID(mMobileItemId);
 
-
-  /**
-   * Resets all the appropriate fields to a default state while also animating
-   * the hover cell back to its correct location.
-   */
-  private void touchEventsEnded()
-  {
-    try
-    {
-      final View mobileView = getViewForID(mMobileItemId);
-
-      if (mCellIsMobile || mIsWaitingForScrollFinish)
-      {
-        mCellIsMobile = false;
-        mIsWaitingForScrollFinish = false;
-        mIsMobileScrolling = false;
-        mActivePointerId = INVALID_POINTER_ID;
-
-        // If the autoscroller has not completed scrolling, we need to wait for it to
-        // finish in order to determine the final location of where the hover cell
-        // should be animated to.
-        if (mScrollState != OnScrollListener.SCROLL_STATE_IDLE)
-        {
-          mIsWaitingForScrollFinish = true;
-          return;
-        }
-
-        mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left, mobileView.getTop());
-
-        ObjectAnimator hoverViewAnimator = ObjectAnimator.ofObject(mHoverCell, "bounds", sBoundEvaluator, mHoverCellCurrentBounds);
-        hoverViewAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener()
-        {
-          @Override
-          public void onAnimationUpdate(ValueAnimator valueAnimator)
-          {
-            invalidate();
-          }
-        });
-
-        hoverViewAnimator.addListener(new AnimatorListenerAdapter()
-        {
-          @Override
-          public void onAnimationStart(Animator animation)
-          {
-            setEnabled(false);
-          }
-
-          @Override
-          public void onAnimationEnd(Animator animation)
-          {
+        if (mCellIsMobile) {
             mAboveItemId = INVALID_ID;
             mMobileItemId = INVALID_ID;
             mBelowItemId = INVALID_ID;
             mobileView.setVisibility(VISIBLE);
             mHoverCell = null;
-            setEnabled(true);
             invalidate();
-          }
-        });
-
-        hoverViewAnimator.start();
-      }
-      else
-      {
-        touchEventsCancelled();
-      }
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "touchEventsEnded: " + ex.getMessage());
-    }
-  }
-
-  /**
-   * Resets all the appropriate fields to a default state.
-   */
-  private void touchEventsCancelled()
-  {
-    try
-    {
-      View mobileView = getViewForID(mMobileItemId);
-
-      if (mCellIsMobile)
-      {
-        mAboveItemId = INVALID_ID;
-        mMobileItemId = INVALID_ID;
-        mBelowItemId = INVALID_ID;
-        mobileView.setVisibility(VISIBLE);
-        mHoverCell = null;
-        invalidate();
-      }
-
-      mCellIsMobile = false;
-      mIsMobileScrolling = false;
-      mActivePointerId = INVALID_POINTER_ID;
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "touchEventsCancelled: " + ex.getMessage());
-    }
-  }
-
-  /**
-   * This TypeEvaluator is used to animate the BitmapDrawable back to its
-   * final location when the user lifts his finger by modifying the
-   * BitmapDrawable's bounds.
-   */
-  private final static TypeEvaluator<Rect> sBoundEvaluator = new TypeEvaluator<Rect>()
-  {
-    public Rect evaluate(float fraction, Rect startValue, Rect endValue)
-    {
-      return new Rect(interpolate(startValue.left, endValue.left, fraction),
-          interpolate(startValue.top, endValue.top, fraction),
-          interpolate(startValue.right, endValue.right, fraction),
-          interpolate(startValue.bottom, endValue.bottom, fraction));
-    }
-
-    public int interpolate(int start, int end, float fraction)
-    {
-      return (int) (start + fraction * (end - start));
-    }
-  };
-
-  /**
-   * Determines whether this listview is in a scrolling state invoked
-   * by the fact that the hover cell is out of the bounds of the listview;
-   */
-  private void handleMobileCellScroll()
-  {
-    mIsMobileScrolling = handleMobileCellScroll(mHoverCellCurrentBounds);
-  }
-
-  /**
-   * This method is in charge of determining if the hover cell is above
-   * or below the bounds of the listview. If so, the listview does an appropriate
-   * upward or downward smooth scroll so as to reveal new items.
-   */
-  public boolean handleMobileCellScroll(Rect r)
-  {
-    try
-    {
-      int offset = computeVerticalScrollOffset();
-      int height = getHeight();
-      int extent = computeVerticalScrollExtent();
-      int range = computeVerticalScrollRange();
-      int hoverViewTop = r.top;
-      int hoverHeight = r.height();
-
-      if (hoverViewTop <= 0 && offset > 0)
-      {
-        smoothScrollBy(-mSmoothScrollAmountAtEdge, 0);
-        return true;
-      }
-
-      if (hoverViewTop + hoverHeight >= height && (offset + extent) < range)
-      {
-        smoothScrollBy(mSmoothScrollAmountAtEdge, 0);
-        return true;
-      }
-
-      return false;
-    }
-    catch (Exception ex)
-    {
-      Log.e(TAG_LOG, "handleMobileCellScroll: " + ex.getMessage());
-      return false;
-    }
-  }
-
-  public void setPersonList(ArrayList<Person> persons)
-  {
-    this.persons = persons;
-  }
-
-  /**
-   * This scroll listener is added to the listview in order to handle cell swapping
-   * when the cell is either at the top or bottom edge of the listview. If the hover
-   * cell is at either edge of the listview, the listview will begin scrolling. As
-   * scrolling takes place, the listview continuously checks if new cells became visible
-   * and determines whether they are potential candidates for a cell swap.
-   */
-  private OnScrollListener mScrollListener = new OnScrollListener()
-  {
-    private int mPreviousFirstVisibleItem = -1;
-    private int mPreviousVisibleItemCount = -1;
-    private int mCurrentFirstVisibleItem;
-    private int mCurrentVisibleItemCount;
-    private int mCurrentScrollState;
-
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)
-    {
-      try
-      {
-        mCurrentFirstVisibleItem = firstVisibleItem;
-        mCurrentVisibleItemCount = visibleItemCount;
-
-        mPreviousFirstVisibleItem = (mPreviousFirstVisibleItem == -1) ? mCurrentFirstVisibleItem : mPreviousFirstVisibleItem;
-        mPreviousVisibleItemCount = (mPreviousVisibleItemCount == -1) ? mCurrentVisibleItemCount : mPreviousVisibleItemCount;
-
-        checkAndHandleFirstVisibleCellChange();
-        checkAndHandleLastVisibleCellChange();
-
-        mPreviousFirstVisibleItem = mCurrentFirstVisibleItem;
-        mPreviousVisibleItemCount = mCurrentVisibleItemCount;
-      }
-      catch (Exception ex)
-      {
-        Log.e(TAG_LOG, "onScroll: " + ex.getMessage());
-      }
-    }
-
-    @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState)
-    {
-      try
-      {
-        mCurrentScrollState = scrollState;
-        mScrollState = scrollState;
-        isScrollCompleted();
-      }
-      catch (Exception ex)
-      {
-        Log.e(TAG_LOG, "onScrollStateChanged: " + ex.getMessage());
-      }
-    }
-
-    /**
-     * This method is in charge of invoking 1 of 2 actions. Firstly, if the listview
-     * is in a state of scrolling invoked by the hover cell being outside the bounds
-     * of the listview, then this scrolling event is continued. Secondly, if the hover
-     * cell has already been released, this invokes the animation for the hover cell
-     * to return to its correct position after the listview has entered an idle scroll
-     * state.
-     */
-    private void isScrollCompleted()
-    {
-      try
-      {
-        if (mCurrentVisibleItemCount > 0 && mCurrentScrollState == SCROLL_STATE_IDLE)
-        {
-          if (mCellIsMobile && mIsMobileScrolling)
-          {
-            handleMobileCellScroll();
-          }
-          else if (mIsWaitingForScrollFinish)
-          {
-            touchEventsEnded();
-          }
         }
-      }
-      catch (Exception ex)
-      {
-        Log.e(TAG_LOG, "isScrollCompleted: " + ex.getMessage());
-      }
+
+        mCellIsMobile = false;
+        mIsMobileScrolling = false;
+        mActivePointerId = INVALID_POINTER_ID;
     }
 
     /**
-     * Determines if the listview scrolled up enough to reveal a new cell at the
-     * top of the list. If so, then the appropriate parameters are updated.
+     * This TypeEvaluator is used to animate the BitmapDrawable back to its
+     * final location when the user lifts his finger by modifying the
+     * BitmapDrawable's bounds.
      */
-    public void checkAndHandleFirstVisibleCellChange()
-    {
-      try
-      {
-        if (mCurrentFirstVisibleItem != mPreviousFirstVisibleItem)
-        {
-          if (mCellIsMobile && mMobileItemId != INVALID_ID)
-          {
-            updateNeighborViewsForID(mMobileItemId);
-            handleCellSwitch();
-          }
+    private final static TypeEvaluator<Rect> sBoundEvaluator = new TypeEvaluator<Rect>() {
+        public Rect evaluate(float fraction, Rect startValue, Rect endValue) {
+            return new Rect(interpolate(startValue.left, endValue.left, fraction),
+                    interpolate(startValue.top, endValue.top, fraction),
+                    interpolate(startValue.right, endValue.right, fraction),
+                    interpolate(startValue.bottom, endValue.bottom, fraction));
         }
-      }
-      catch (Exception ex)
-      {
-        Log.e(TAG_LOG, "checkAndHandleFirstVisibleCellChange: " + ex.getMessage());
-      }
-    }
 
-    /**
-     * Determines if the listview scrolled down enough to reveal a new cell at the
-     * bottom of the list. If so, then the appropriate parameters are updated.
-     */
-    public void checkAndHandleLastVisibleCellChange()
-    {
-      try
-      {
-        int currentLastVisibleItem = mCurrentFirstVisibleItem + mCurrentVisibleItemCount;
-        int previousLastVisibleItem = mPreviousFirstVisibleItem + mPreviousVisibleItemCount;
-
-        if (currentLastVisibleItem != previousLastVisibleItem)
-        {
-          if (mCellIsMobile && mMobileItemId != INVALID_ID)
-          {
-            updateNeighborViewsForID(mMobileItemId);
-            handleCellSwitch();
-          }
+        public int interpolate(int start, int end, float fraction) {
+            return (int) (start + fraction * (end - start));
         }
-      }
-      catch (Exception ex)
-      {
-        Log.e(TAG_LOG, "checkAndHandleLastVisibleCellChange: " + ex.getMessage());
-      }
-    }
-  };
+    };
 
-  interface IVerticalScrollCallback
-  {
     /**
-     * A callback that indicates that the listview has been scrolled vertically.
+     * Determines whether this listview is in a scrolling state invoked
+     * by the fact that the hover cell is out of the bounds of the listview;
      */
-    void onVerticalScroll();
-  }
+    private void handleMobileCellScroll() {
+        mIsMobileScrolling = handleMobileCellScroll(mHoverCellCurrentBounds);
+    }
+
+    /**
+     * This method is in charge of determining if the hover cell is above
+     * or below the bounds of the listview. If so, the listview does an appropriate
+     * upward or downward smooth scroll so as to reveal new items.
+     */
+    public boolean handleMobileCellScroll(Rect r) {
+        int offset = computeVerticalScrollOffset();
+        int height = getHeight();
+        int extent = computeVerticalScrollExtent();
+        int range = computeVerticalScrollRange();
+        int hoverViewTop = r.top;
+        int hoverHeight = r.height();
+
+        if (hoverViewTop <= 0 && offset > 0) {
+            smoothScrollBy(-mSmoothScrollAmountAtEdge, 0);
+            return true;
+        }
+
+        if (hoverViewTop + hoverHeight >= height && (offset + extent) < range) {
+            smoothScrollBy(mSmoothScrollAmountAtEdge, 0);
+            return true;
+        }
+
+        return false;
+    }
+
+    public void setPersonList(ArrayList<Person> persons) {
+        mPersons = persons;
+    }
+
+    /**
+     * This scroll listener is added to the listview in order to handle cell swapping
+     * when the cell is either at the top or bottom edge of the listview. If the hover
+     * cell is at either edge of the listview, the listview will begin scrolling. As
+     * scrolling takes place, the listview continuously checks if new cells became visible
+     * and determines whether they are potential candidates for a cell swap.
+     */
+    private OnScrollListener mScrollListener = new OnScrollListener() {
+        private int mPreviousFirstVisibleItem = -1;
+        private int mPreviousVisibleItemCount = -1;
+        private int mCurrentFirstVisibleItem;
+        private int mCurrentVisibleItemCount;
+        private int mCurrentScrollState;
+
+        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            mCurrentFirstVisibleItem = firstVisibleItem;
+            mCurrentVisibleItemCount = visibleItemCount;
+
+            mPreviousFirstVisibleItem = (mPreviousFirstVisibleItem == -1) ? mCurrentFirstVisibleItem : mPreviousFirstVisibleItem;
+            mPreviousVisibleItemCount = (mPreviousVisibleItemCount == -1) ? mCurrentVisibleItemCount : mPreviousVisibleItemCount;
+
+            checkAndHandleFirstVisibleCellChange();
+            checkAndHandleLastVisibleCellChange();
+
+            mPreviousFirstVisibleItem = mCurrentFirstVisibleItem;
+            mPreviousVisibleItemCount = mCurrentVisibleItemCount;
+        }
+
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState) {
+            try {
+                mCurrentScrollState = scrollState;
+                mScrollState = scrollState;
+                isScrollCompleted();
+            } catch (Exception ex) {
+                Log.e(TAG_LOG, "onScrollStateChanged: " + ex.getMessage());
+            }
+        }
+
+        /**
+         * This method is in charge of invoking 1 of 2 actions. Firstly, if the listview
+         * is in a state of scrolling invoked by the hover cell being outside the bounds
+         * of the listview, then this scrolling event is continued. Secondly, if the hover
+         * cell has already been released, this invokes the animation for the hover cell
+         * to return to its correct position after the listview has entered an idle scroll
+         * state.
+         */
+        private void isScrollCompleted() {
+            if (mCurrentVisibleItemCount > 0 && mCurrentScrollState == SCROLL_STATE_IDLE) {
+                if (mCellIsMobile && mIsMobileScrolling) {
+                    handleMobileCellScroll();
+                } else if (mIsWaitingForScrollFinish) {
+                    touchEventsEnded();
+                }
+            }
+        }
+
+        /**
+         * Determines if the listview scrolled up enough to reveal a new cell at the
+         * top of the list. If so, then the appropriate parameters are updated.
+         */
+        public void checkAndHandleFirstVisibleCellChange() {
+            if (mCurrentFirstVisibleItem != mPreviousFirstVisibleItem) {
+                if (mCellIsMobile && mMobileItemId != INVALID_ID) {
+                    updateNeighborViewsForID(mMobileItemId);
+                    handleCellSwitch();
+                }
+            }
+        }
+
+        /**
+         * Determines if the listview scrolled down enough to reveal a new cell at the
+         * bottom of the list. If so, then the appropriate parameters are updated.
+         */
+        public void checkAndHandleLastVisibleCellChange() {
+            int currentLastVisibleItem = mCurrentFirstVisibleItem + mCurrentVisibleItemCount;
+            int previousLastVisibleItem = mPreviousFirstVisibleItem + mPreviousVisibleItemCount;
+
+            if (currentLastVisibleItem != previousLastVisibleItem) {
+                if (mCellIsMobile && mMobileItemId != INVALID_ID) {
+                    updateNeighborViewsForID(mMobileItemId);
+                    handleCellSwitch();
+                }
+            }
+        }
+    };
+
+    interface IVerticalScrollCallback {
+        /**
+         * A callback that indicates that the listview has been scrolled vertically.
+         */
+        void onVerticalScroll();
+    }
 }
